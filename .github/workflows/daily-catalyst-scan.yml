@@ -1,0 +1,62 @@
+name: Daily Catalyst Scan
+
+# Runs every weekday at 02:00 UTC (≈ 9 PM ET previous evening)
+# — captures end-of-day 8-Ks and after-hours news. Then refreshes
+# 30-day price data for the top 250 stocks by P + 2C.
+on:
+  schedule:
+    - cron: "0 2 * * 2-6"  # Tue–Sat UTC = Mon–Fri evening ET
+  workflow_dispatch:        # allow manual trigger
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350    # market-scan can take ~60 min; price refresh ~10 min
+    permissions:
+      contents: write       # needed to commit JSON back to repo
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run market scan (Finnhub + EDGAR + Gemini catalyst scoring)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          YFINANCE_RATE_DELAY: "0.1"
+        run: |
+          python pipeline.py --market-scan --news-days 2
+
+      - name: Refresh 30-day prices for top 250 stocks
+        env:
+          YFINANCE_RATE_DELAY: "0.3"
+        run: |
+          python pipeline.py --refresh-prices --top-n 250
+
+      - name: Commit JSON outputs
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research_output/catalyst_scores.json \
+                  research_output/news_cache.json \
+                  research_output/price_data.json \
+                  research_output/digest/ || true
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "auto: daily catalyst scan + price refresh [skip ci]"
+            git push
+          fi

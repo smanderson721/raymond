@@ -1,0 +1,50 @@
+name: Weekly Precondition Scan
+
+# Sunday 23:00 UTC ≈ 6 PM ET Sunday — refreshes the precondition scores
+# for all ~5000 NASDAQ + NYSE tickers via yfinance.
+on:
+  schedule:
+    - cron: "0 23 * * 0"
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run precondition scan (yfinance only — no Gemini)
+        env:
+          YFINANCE_RATE_DELAY: "0.15"
+        run: |
+          python pipeline.py --stocks-scan --exchange all
+
+      - name: Commit scan_results.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research_output/scan_results.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "auto: weekly precondition scan [skip ci]"
+            git push
+          fi

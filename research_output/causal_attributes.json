@@ -1,0 +1,385 @@
+{
+  "preconditions": [
+    {
+      "id": "low_float_volatility",
+      "name": "Low-Float & Microcap Dynamics",
+      "description": "Very small number of shares available for public trading. Even moderate buying pressure causes disproportionate price spikes.",
+      "yfinance_fields": [
+        "floatShares",
+        "sharesOutstanding"
+      ],
+      "examples": [
+        {
+          "ticker": "MGRT",
+          "detail": "Float ~3.75M shares"
+        },
+        {
+          "ticker": "RMSG",
+          "detail": "Float ~1.7M shares"
+        },
+        {
+          "ticker": "SIDU",
+          "detail": "Low float amplified contract news"
+        }
+      ]
+    },
+    {
+      "id": "short_squeeze_setup",
+      "name": "Short Squeeze Setup",
+      "description": "High short interest as percentage of float. Positive surprise forces covering, creating feedback loop.",
+      "yfinance_fields": [
+        "shortPercentOfFloat",
+        "shortRatio"
+      ],
+      "examples": [
+        {
+          "ticker": "CAR",
+          "detail": "High SI led to massive squeeze during airport chaos"
+        },
+        {
+          "ticker": "CSTE",
+          "detail": "Short interest surged 122% before breakout"
+        },
+        {
+          "ticker": "GVH",
+          "detail": "Vertical price movement from short covering"
+        }
+      ]
+    },
+    {
+      "id": "financial_distress",
+      "name": "Debt Distress & Restructuring Setup",
+      "description": "High debt-to-equity, negative earnings, low current ratio. Any positive restructuring news causes massive rerating.",
+      "yfinance_fields": [
+        "debtToEquity",
+        "currentRatio",
+        "totalDebt",
+        "totalCash",
+        "trailingEps"
+      ],
+      "examples": [
+        {
+          "ticker": "BBGI",
+          "detail": "Announced comprehensive debt exchange"
+        },
+        {
+          "ticker": "MKDW",
+          "detail": "Removed toxic financial instruments"
+        },
+        {
+          "ticker": "VATE",
+          "detail": "Mitigated going-concern risks"
+        }
+      ]
+    },
+    {
+      "id": "compliance_risk",
+      "name": "Exchange Compliance Risk",
+      "description": "Stock trading near $1.00 minimum bid price for exchange listing. Compliance recovery triggers rally as delisting fear lifts.",
+      "yfinance_fields": [
+        "currentPrice",
+        "regularMarketPrice"
+      ],
+      "examples": [
+        {
+          "ticker": "AIXI",
+          "detail": "Regained Nasdaq compliance after deficiency notice"
+        },
+        {
+          "ticker": "UGRO",
+          "detail": "Removed delisting fears by regaining compliance"
+        },
+        {
+          "ticker": "RMSG",
+          "detail": "Rallied following efforts to cure minimum bid price"
+        }
+      ]
+    },
+    {
+      "id": "insider_accumulation",
+      "name": "High Insider Ownership",
+      "description": "Directors, CEOs, or major holders aggressively accumulating shares. Signals conviction that stock is undervalued.",
+      "yfinance_fields": [
+        "heldPercentInsiders",
+        "heldPercentInstitutions"
+      ],
+      "examples": [
+        {
+          "ticker": "LNZA",
+          "detail": "Massive institutional insider vote of confidence"
+        },
+        {
+          "ticker": "CSTE",
+          "detail": "13F filings revealed aggressive institutional entry"
+        },
+        {
+          "ticker": "GVH",
+          "detail": "Five insider disclosure filings in late March"
+        }
+      ]
+    },
+    {
+      "id": "microcap",
+      "name": "Microcap with Catalyst Potential",
+      "description": "Very small market cap (<$300M). Any material news can move the stock 50-500% because the entire company is priced for nothing.",
+      "yfinance_fields": [
+        "marketCap"
+      ],
+      "examples": [
+        {
+          "ticker": "MGRT",
+          "detail": "Microcap with tiny float"
+        },
+        {
+          "ticker": "RMSG",
+          "detail": "Sub-$100M market cap"
+        },
+        {
+          "ticker": "SIDU",
+          "detail": "Micro space company"
+        }
+      ]
+    },
+    {
+      "id": "beaten_down",
+      "name": "Near 52-Week Low / Oversold",
+      "description": "Stock trading near its 52-week low or with extremely low RSI. Snap-back rallies from oversold conditions trigger algorithmic buying.",
+      "yfinance_fields": [
+        "fiftyTwoWeekLow",
+        "fiftyTwoWeekHigh",
+        "currentPrice"
+      ],
+      "examples": [
+        {
+          "ticker": "CSTE",
+          "detail": "RSI plummeted to 10.49 triggering oversold bounce"
+        },
+        {
+          "ticker": "LNZA",
+          "detail": "Triggered automated buy signals from quant systems"
+        }
+      ]
+    },
+    {
+      "id": "hot_sector",
+      "name": "Hot Sector Exposure",
+      "description": "Company operates in AI, space, biotech, clean energy, or other sectors receiving outsized capital flows.",
+      "yfinance_fields": [
+        "sector",
+        "industry"
+      ],
+      "examples": [
+        {
+          "ticker": "BIRD",
+          "detail": "Pivoted to AI infrastructure"
+        },
+        {
+          "ticker": "MIGI",
+          "detail": "Repositioned from Bitcoin to HPC/AI"
+        },
+        {
+          "ticker": "SIDU",
+          "detail": "Space technology company"
+        },
+        {
+          "ticker": "CUE",
+          "detail": "Biotech with oncology pipeline"
+        }
+      ]
+    },
+    {
+      "id": "revenue_growth_signal",
+      "name": "Revenue/Earnings Growth Trajectory",
+      "description": "Strong revenue or earnings growth not yet fully priced in. Gap between forward PE and trailing PE suggests market expects acceleration.",
+      "yfinance_fields": [
+        "revenueGrowth",
+        "earningsGrowth",
+        "forwardPE",
+        "trailingPE"
+      ],
+      "examples": [
+        {
+          "ticker": "LNZA",
+          "detail": "Results fundamentally changed growth assumptions"
+        },
+        {
+          "ticker": "VATE",
+          "detail": "Infrastructure segment record backlog"
+        }
+      ]
+    }
+  ],
+  "catalysts": [
+    {
+      "id": "retail_social_momentum",
+      "name": "Speculative Retail & Social Momentum",
+      "description": "Coordinated retail trading from Discord, Reddit, X. Viral sentiment overwhelms valuation.",
+      "examples": [
+        {
+          "ticker": "MGRT",
+          "detail": "Discord trading groups"
+        },
+        {
+          "ticker": "AIXI",
+          "detail": "Viral on retail message boards"
+        },
+        {
+          "ticker": "BIRD",
+          "detail": "r/WallStreetBets meme stock"
+        }
+      ]
+    },
+    {
+      "id": "strategic_pivot",
+      "name": "Strategic Business Pivot",
+      "description": "Company fundamentally changes core business into high-growth sector. Market revalues based on new TAM.",
+      "examples": [
+        {
+          "ticker": "BIRD",
+          "detail": "Footwear to AI infrastructure"
+        },
+        {
+          "ticker": "UGRO",
+          "detail": "Cannabis to media-tech"
+        },
+        {
+          "ticker": "MIGI",
+          "detail": "Bitcoin mining to HPC/AI"
+        }
+      ]
+    },
+    {
+      "id": "legal_litigation_success",
+      "name": "Legal Victory & Litigation Breakthrough",
+      "description": "Favorable court ruling or settlement removes existential threat or validates IP.",
+      "examples": [
+        {
+          "ticker": "AIXI",
+          "detail": "Final legal victory against Apple in China highest court"
+        }
+      ]
+    },
+    {
+      "id": "macro_geopolitical_catalyst",
+      "name": "Macro & Geopolitical Supply Shocks",
+      "description": "External global events create supply shortages or demand spikes for company products.",
+      "examples": [
+        {
+          "ticker": "SKYQ",
+          "detail": "Refinery closures + Strait of Hormuz blockade"
+        },
+        {
+          "ticker": "CAR",
+          "detail": "TSA staffing shortages"
+        },
+        {
+          "ticker": "ONEG",
+          "detail": "Safe haven during US-China tensions"
+        }
+      ]
+    },
+    {
+      "id": "strategic_partnership_contract",
+      "name": "Major Partnership or Contract Win",
+      "description": "High-value contract or partnership with credible counterparty validates technology and provides revenue path.",
+      "examples": [
+        {
+          "ticker": "RMSG",
+          "detail": "MOU with major Middle Eastern group"
+        },
+        {
+          "ticker": "SIDU",
+          "detail": "Payload agreement with Lonestar"
+        },
+        {
+          "ticker": "SATL",
+          "detail": "Merlin constellation after naval contract"
+        }
+      ]
+    },
+    {
+      "id": "earnings_super_beat",
+      "name": "Earnings Outperformance",
+      "description": "Financial results significantly exceed expectations, often paired with accelerated profitability guidance.",
+      "examples": [
+        {
+          "ticker": "LNZA",
+          "detail": "Fundamentally changed growth assumptions"
+        },
+        {
+          "ticker": "CSTE",
+          "detail": "$100M cost savings guidance + positive EBITDA timeline"
+        },
+        {
+          "ticker": "VATE",
+          "detail": "Record backlog earnings beat"
+        }
+      ]
+    },
+    {
+      "id": "clinical_regulatory_milestone",
+      "name": "Clinical or Regulatory Milestone",
+      "description": "Positive trial data, FDA approval, or EU MDR certification de-risks pipeline.",
+      "examples": [
+        {
+          "ticker": "CUE",
+          "detail": "Milestone payment from Boehringer Ingelheim"
+        },
+        {
+          "ticker": "PDSB",
+          "detail": "Positive Stage 2 interim results"
+        },
+        {
+          "ticker": "VATE",
+          "detail": "EU MDR certification"
+        }
+      ]
+    },
+    {
+      "id": "management_leadership_change",
+      "name": "Management Overhaul",
+      "description": "New C-suite or board members signal commitment to better capital allocation.",
+      "examples": [
+        {
+          "ticker": "MIGI",
+          "detail": "Cooperation agreement with Endeavor for board overhaul"
+        },
+        {
+          "ticker": "CUE",
+          "detail": "New CEO Lucinda Warren"
+        },
+        {
+          "ticker": "SATL",
+          "detail": "Former NGA director appointed to board"
+        }
+      ]
+    },
+    {
+      "id": "mergers_acquisitions",
+      "name": "M&A Activity",
+      "description": "Definitive acquisition agreement or credible buyout rumors. Stock gaps to offer price.",
+      "examples": [
+        {
+          "ticker": "APLS",
+          "detail": "Acquired by Biogen for $41/share + CVRs"
+        }
+      ]
+    },
+    {
+      "id": "ticker_confusion",
+      "name": "Ticker Confusion & Algorithmic Error",
+      "description": "Stock surges because ticker is similar to trending company or news topic.",
+      "examples": [
+        {
+          "ticker": "MGRT",
+          "detail": "Spiked on MFN trade policy news"
+        },
+        {
+          "ticker": "LNZA",
+          "detail": "Confused with Lonza Group"
+        }
+      ]
+    }
+  ],
+  "last_updated": "2026-04-16"
+}
