@@ -22,6 +22,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone, timedelta
 
 OUTPUT_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -30,8 +31,11 @@ OUTPUT_DIR = os.path.join(
 SCAN_FILE = os.path.join(OUTPUT_DIR, "scan_results.json")
 SCORES_FILE = os.path.join(OUTPUT_DIR, "catalyst_scores.json")
 PRICE_FILE = os.path.join(OUTPUT_DIR, "price_data.json")
+HISTORY_FILE = os.path.join(OUTPUT_DIR, "watchlist_history.json")
+COMBINED_FILE = os.path.join(OUTPUT_DIR, "watchlist_combined.json")
 
 DEFAULT_WATCHLIST_NAME = "Raymond Top 100 BUP"
+HISTORY_WINDOW_DAYS = 14
 PAPER_BASE = "https://paper-api.alpaca.markets"
 LIVE_BASE = "https://api.alpaca.markets"
 
@@ -154,14 +158,77 @@ def _add_symbol(base: str, key_id: str, secret: str, wl_id: str, symbol: str) ->
 
 # ── Main ─────────────────────────────────────────────────────────────
 
-def _write_watchlist_txt(top: list[tuple[str, float]]) -> None:
-    """Write the top tickers as a plain-text file for TradingView import."""
+def _write_watchlist_txt(tickers: list[str]) -> None:
+    """Write the deduped tickers as a plain-text file for TradingView import."""
     path = os.path.join(OUTPUT_DIR, "watchlist.txt")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        for t, _ in top:
+        for t in tickers:
             f.write(t + "\n")
-    print(f"  Wrote {len(top)} tickers to {path}")
+    print(f"  Wrote {len(tickers)} tickers to {path}")
+
+
+def _update_history(today_top: list[tuple[str, float]]) -> dict:
+    """Append today's top-N to history, trim to HISTORY_WINDOW_DAYS, return history dict."""
+    today = datetime.now(timezone.utc).date().isoformat()
+    cutoff = (datetime.now(timezone.utc).date() - timedelta(days=HISTORY_WINDOW_DAYS - 1)).isoformat()
+
+    history = _load_json(HISTORY_FILE) or {"days": []}
+    days = [d for d in history.get("days", []) if d.get("date") and d["date"] >= cutoff and d["date"] != today]
+    days.append({
+        "date": today,
+        "top": [{"ticker": t, "bup": round(b, 2)} for t, b in today_top],
+    })
+    days.sort(key=lambda d: d["date"])
+    history["days"] = days
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=2)
+    return history
+
+
+def _combined_from_history(history: dict) -> list[dict]:
+    """Build deduped per-ticker rollup from history days."""
+    rollup: dict[str, dict] = {}
+    for day in history.get("days", []):
+        date = day["date"]
+        for entry in day.get("top", []):
+            t = entry["ticker"]
+            b = entry["bup"]
+            if t not in rollup:
+                rollup[t] = {
+                    "ticker": t,
+                    "best_bup": b,
+                    "best_bup_date": date,
+                    "first_seen": date,
+                    "last_seen": date,
+                    "days_in_list": 1,
+                }
+            else:
+                r = rollup[t]
+                r["days_in_list"] += 1
+                r["last_seen"] = max(r["last_seen"], date)
+                r["first_seen"] = min(r["first_seen"], date)
+                if b > r["best_bup"]:
+                    r["best_bup"] = b
+                    r["best_bup_date"] = date
+
+    combined = list(rollup.values())
+    combined.sort(key=lambda r: (-r["best_bup"], r["ticker"]))
+    return combined
+
+
+def _write_combined(combined: list[dict]) -> None:
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "window_days": HISTORY_WINDOW_DAYS,
+        "count": len(combined),
+        "tickers": combined,
+    }
+    with open(COMBINED_FILE, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+    print(f"  Wrote {len(combined)} unique tickers ({HISTORY_WINDOW_DAYS}d window) to {COMBINED_FILE}")
 
 
 def push_watchlist(
@@ -169,14 +236,18 @@ def push_watchlist(
     name: str = DEFAULT_WATCHLIST_NAME,
     live: bool = False,
 ) -> None:
-    top = _compute_bup_top(top_n)
-    if not top:
+    today_top = _compute_bup_top(top_n)
+    if not today_top:
         print("No BUP scorers found — nothing to push.")
         return
 
-    # Always write the plain-text watchlist for the public Pages site,
-    # whether or not Alpaca credentials are configured.
-    _write_watchlist_txt(top)
+    # Roll today's top into the rolling 14-day history and build combined set.
+    history = _update_history(today_top)
+    combined = _combined_from_history(history)
+    symbols = [r["ticker"] for r in combined]
+
+    _write_watchlist_txt(symbols)
+    _write_combined(combined)
 
     key_id = os.environ.get("ALPACA_API_KEY_ID", "")
     secret = os.environ.get("ALPACA_API_SECRET_KEY", "")
@@ -186,14 +257,14 @@ def push_watchlist(
 
     base = os.environ.get("ALPACA_BASE_URL") or (LIVE_BASE if live else PAPER_BASE)
 
-    symbols = [t for t, _ in top]
-    print(f"\n── Alpaca watchlist push: top {len(symbols)} by BUP ──")
+    print(f"\n── Alpaca watchlist push: {len(symbols)} unique tickers (last {HISTORY_WINDOW_DAYS}d) ──")
     print(f"  Endpoint: {base}")
     print(f"  Watchlist: {name!r}")
-    for i, (t, bup) in enumerate(top[:10], 1):
-        print(f"    {i:2d}. {t:6s}  BUP={bup:.2f}")
-    if len(top) > 10:
-        print(f"    ... and {len(top) - 10} more")
+    print(f"  History spans {len(history['days'])} day(s), today added {len(today_top)} new scorers")
+    for i, r in enumerate(combined[:10], 1):
+        print(f"    {i:2d}. {r['ticker']:6s}  best BUP={r['best_bup']:.2f}  on {r['best_bup_date']}  ({r['days_in_list']}d)")
+    if len(combined) > 10:
+        print(f"    ... and {len(combined) - 10} more")
 
     existing = _find_watchlist(base, key_id, secret, name)
 

@@ -113,16 +113,17 @@
   <div class="sub" id="meta">loading…</div>
   <div class="links">
     <a href="research_output/watchlist.txt">watchlist.txt (TradingView import)</a>
+    <a href="research_output/watchlist_combined.json">watchlist_combined.json</a>
+    <a href="research_output/watchlist_history.json">history (14d)</a>
     <a href="research_output/catalyst_scores.json">catalyst_scores.json</a>
-    <a href="research_output/scan_results.json">scan_results.json</a>
     <a href="https://github.com/smanderson721/raymond">repo</a>
   </div>
 </header>
 <main>
   <div class="controls">
-    <label>Top N: <input type="number" id="topN" value="100" min="10" max="500" step="10"></label>
+    <label>Top N: <input type="number" id="topN" value="500" min="10" max="2000" step="10"></label>
     <label>Filter: <input type="text" id="filter" placeholder="ticker or text…"></label>
-    <label><input type="checkbox" id="catalystOnly" checked> Catalyst only</label>
+    <label><input type="checkbox" id="catalystOnly"> Catalyst only</label>
     <span id="count"></span>
   </div>
   <div id="status">Loading…</div>
@@ -131,8 +132,10 @@
       <tr>
         <th data-k="rank">#</th>
         <th data-k="ticker">Ticker</th>
-        <th data-k="bup" class="num">BUP</th>
-        <th data-k="precondition" class="num">P</th>
+        <th data-k="best_bup" class="num">Best BUP</th>
+        <th data-k="days_in_list" class="num">Days</th>
+        <th data-k="first_seen">First Seen</th>
+        <th data-k="last_seen">Last Seen</th>
         <th data-k="catalyst" class="num">C</th>
         <th data-k="price" class="num">Price</th>
         <th data-k="change" class="num">Δ</th>
@@ -147,7 +150,7 @@
 </main>
 
 <script>
-const SCAN_URL = "research_output/scan_results.json";
+const COMBINED_URL = "research_output/watchlist_combined.json";
 const SCORES_URL = "research_output/catalyst_scores.json";
 const PRICE_URL = "research_output/price_data.json";
 
@@ -172,55 +175,38 @@ function pctClass(n) {
 }
 
 let rows = [];
-let sortKey = "bup";
+let sortKey = "best_bup";
 let sortDir = -1;
 
-function compute(scanData, scoresData, priceData) {
-  const latestScan = (scanData && scanData.scans && scanData.scans[0]) || null;
-  const scanMap = {};
-  if (latestScan) {
-    for (const s of latestScan.stocks) scanMap[s.ticker] = s;
-  }
+function compute(combinedData, scoresData, priceData) {
+  const list = (combinedData && combinedData.tickers) || [];
   const sessions = (scoresData && scoresData.sessions) || [];
   const latestScores = sessions.length ? sessions[sessions.length - 1].scores : {};
   const prices = (priceData && priceData.tickers) || {};
 
-  const universe = new Set([...Object.keys(scanMap), ...Object.keys(latestScores)]);
-  const out = [];
-  for (const ticker of universe) {
-    const scan = scanMap[ticker] || {};
-    const cat = latestScores[ticker] || {};
-    const price = prices[ticker] || {};
-    const p = scan.precondition_score || 0;
-    const c = cat.score || 0;
-    let pct = price.pct_30d;
-    if (pct === null || pct === undefined) {
-      if (!c) continue;
-      pct = 0;
-    }
-    const pctInt = Math.max(Math.round(pct * 100), 0);
-    const penalty = Math.sqrt(pctInt);
-    const bup = p + 2 * c - penalty;
-    if (bup <= 0) continue;
-    out.push({
-      ticker,
-      bup,
-      precondition: p,
-      catalyst: c,
-      pct_30d: pct,
+  return list.map(r => {
+    const cat = latestScores[r.ticker] || {};
+    const price = prices[r.ticker] || {};
+    return {
+      ticker: r.ticker,
+      best_bup: r.best_bup,
+      first_seen: r.first_seen,
+      last_seen: r.last_seen,
+      days_in_list: r.days_in_list,
+      catalyst: cat.score ?? null,
+      pct_30d: price.pct_30d ?? null,
       pct_1d: price.pct_1d ?? null,
       pct_7d: price.pct_7d ?? null,
       change: price.change ?? null,
-      price: price.price ?? scan.price ?? null,
+      price: price.price ?? null,
       blurb: cat.blurb || "",
-      hasCatalyst: c > 0,
-    });
-  }
-  return { rows: out, scanDate: latestScan?.timestamp, scoresDate: sessions[sessions.length - 1]?.date };
+      hasCatalyst: (cat.score || 0) > 0,
+    };
+  });
 }
 
 function render() {
-  const topN = parseInt(document.getElementById("topN").value, 10) || 100;
+  const topN = parseInt(document.getElementById("topN").value, 10) || 500;
   const filter = document.getElementById("filter").value.trim().toLowerCase();
   const catOnly = document.getElementById("catalystOnly").checked;
 
@@ -247,9 +233,11 @@ function render() {
     <tr>
       <td>${i + 1}</td>
       <td class="ticker">${x.ticker}</td>
-      <td class="num"><strong>${fmt(x.bup, 1)}</strong></td>
-      <td class="num">${fmt(x.precondition, 0)}</td>
-      <td class="num">${fmt(x.catalyst, 0)}</td>
+      <td class="num"><strong>${fmt(x.best_bup, 1)}</strong></td>
+      <td class="num">${x.days_in_list}</td>
+      <td>${x.first_seen}</td>
+      <td>${x.last_seen}</td>
+      <td class="num">${x.catalyst != null ? fmt(x.catalyst, 0) : "—"}</td>
       <td class="num">${x.price != null ? "$" + fmt(x.price, 2) : "—"}</td>
       <td class="num ${pctClass(x.change)}">${x.change != null ? (x.change >= 0 ? "+" : "") + fmt(x.change, 2) : "—"}</td>
       <td class="num ${pctClass(x.pct_1d)}">${x.pct_1d != null ? fmt(x.pct_1d * 100, 2) + "%" : "—"}</td>
@@ -262,22 +250,22 @@ function render() {
 }
 
 async function main() {
-  const [scan, scores, prices] = await Promise.all([
-    fetchJson(SCAN_URL),
+  const [combined, scores, prices] = await Promise.all([
+    fetchJson(COMBINED_URL),
     fetchJson(SCORES_URL),
     fetchJson(PRICE_URL),
   ]);
-  if (!scan && !scores) {
-    document.getElementById("status").textContent = "Failed to load data.";
+  if (!combined) {
+    document.getElementById("status").textContent =
+      "watchlist_combined.json not yet generated — run the daily catalyst scan to populate.";
     return;
   }
-  const result = compute(scan, scores, prices);
-  rows = result.rows;
+  rows = compute(combined, scores, prices);
 
-  const meta = [];
-  if (result.scoresDate) meta.push(`Catalyst scores: ${result.scoresDate}`);
-  if (result.scanDate) meta.push(`Precondition scan: ${result.scanDate.slice(0, 10)}`);
-  meta.push(`${rows.length} ranked stocks`);
+  const meta = [
+    `${combined.count} unique tickers across last ${combined.window_days} days`,
+    `Updated: ${combined.generated_at?.slice(0, 16).replace("T", " ")} UTC`,
+  ];
   document.getElementById("meta").textContent = meta.join(" · ");
 
   document.getElementById("status").style.display = "none";
@@ -290,7 +278,7 @@ async function main() {
     th.addEventListener("click", () => {
       const k = th.dataset.k;
       if (k === sortKey) sortDir = -sortDir;
-      else { sortKey = k; sortDir = k === "ticker" ? 1 : -1; }
+      else { sortKey = k; sortDir = k === "ticker" || k === "first_seen" || k === "last_seen" ? 1 : -1; }
       render();
     });
   });

@@ -59,12 +59,19 @@ def _load_latest_catalyst_scores() -> dict[str, dict]:
 
 
 def _select_universe(top_n: int = 250) -> list[str]:
-    """Top N tickers by precondition_score + 2 × catalyst_score."""
+    """Top N tickers by precondition + 2*catalyst, UNION watchlist history.
+
+    Anything that's been on the rolling 14-day watchlist needs fresh price
+    data so the public Pages site shows current daily price action for it.
+    """
     scan = _load_latest_scan()
     cats = _load_latest_catalyst_scores()
 
     if not scan and not cats:
-        return []
+        # Even without scan/catalyst, we still want to refresh history tickers.
+        watchlist_only: set[str] = set()
+    else:
+        watchlist_only = set()
 
     universe = set(scan.keys()) | set(cats.keys())
     ranked = []
@@ -76,7 +83,28 @@ def _select_universe(top_n: int = 250) -> list[str]:
             ranked.append((t, combined, p, c))
 
     ranked.sort(key=lambda r: r[1], reverse=True)
-    return [r[0] for r in ranked[:top_n]]
+    top = [r[0] for r in ranked[:top_n]]
+
+    # Add every ticker that has appeared on the rolling watchlist.
+    history_path = os.path.join(OUTPUT_DIR, "watchlist_history.json")
+    if os.path.exists(history_path):
+        try:
+            with open(history_path, "r", encoding="utf-8") as f:
+                hist = json.load(f)
+            for day in hist.get("days", []):
+                for entry in day.get("top", []):
+                    watchlist_only.add(entry["ticker"])
+        except Exception:
+            pass
+
+    # Preserve top ordering, then append any history-only tickers.
+    seen = set(top)
+    final = list(top)
+    for t in watchlist_only:
+        if t not in seen:
+            final.append(t)
+            seen.add(t)
+    return final
 
 
 def _fetch_pct_30d(ticker: str) -> dict | None:

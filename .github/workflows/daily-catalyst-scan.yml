@@ -62,6 +62,9 @@ jobs:
           git add research_output/catalyst_scores.json \
                   research_output/news_cache.json \
                   research_output/price_data.json \
+                  research_output/watchlist.txt \
+                  research_output/watchlist_history.json \
+                  research_output/watchlist_combined.json \
                   research_output/digest/ || true
           if git diff --staged --quiet; then
             echo "No changes to commit."
