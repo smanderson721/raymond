@@ -47,6 +47,14 @@ jobs:
         run: |
           python pipeline.py --refresh-prices --top-n 250
 
+      - name: Push top 100 BUP scorers to Alpaca watchlist
+        env:
+          ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
+          ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
+        continue-on-error: true
+        run: |
+          python pipeline.py --push-watchlist --top-n 100
+
       - name: Commit JSON outputs
         run: |
           git config user.name  "github-actions[bot]"

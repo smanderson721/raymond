@@ -23,6 +23,12 @@ def main():
                    help="News + EDGAR + Gemini catalyst scoring")
     p.add_argument("--refresh-prices", action="store_true",
                    help="Daily 30-day price refresh for top N stocks by P + 2C")
+    p.add_argument("--push-watchlist", action="store_true",
+                   help="Push top-N BUP scorers to an Alpaca watchlist")
+    p.add_argument("--watchlist-name", type=str, default="Raymond Top 100 BUP",
+                   help="Watchlist name on Alpaca")
+    p.add_argument("--live", action="store_true",
+                   help="Use live Alpaca account (default: paper)")
 
     p.add_argument("--exchange", type=str, default="all",
                    choices=["all", "nasdaq", "nyse"])
@@ -45,6 +51,11 @@ def main():
     if args.refresh_prices:
         from research.price_refresher import refresh_prices
         refresh_prices(top_n=args.top_n)
+        return
+
+    if args.push_watchlist:
+        from research.alpaca_watchlist import push_watchlist
+        push_watchlist(top_n=args.top_n, name=args.watchlist_name, live=args.live)
         return
 
     if args.market_scan:

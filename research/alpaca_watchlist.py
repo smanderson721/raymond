@@ -1,0 +1,243 @@
+#!/usr/bin/env python3
+"""
+Push the top-N BUP scorers to an Alpaca watchlist.
+
+Reads the same JSON files the pitches.html Market Scan tab reads, applies
+the BUP formula, and replaces the contents of a named watchlist on Alpaca.
+
+BUP = (precondition_score + 2 × catalyst_score) − √(max(round(pct_30d × 100), 0))
+
+Required env vars:
+    ALPACA_API_KEY_ID
+    ALPACA_API_SECRET_KEY
+    ALPACA_BASE_URL   (optional — defaults to paper trading endpoint)
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import os
+import sys
+import time
+import urllib.error
+import urllib.request
+
+OUTPUT_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "research_output",
+)
+SCAN_FILE = os.path.join(OUTPUT_DIR, "scan_results.json")
+SCORES_FILE = os.path.join(OUTPUT_DIR, "catalyst_scores.json")
+PRICE_FILE = os.path.join(OUTPUT_DIR, "price_data.json")
+
+DEFAULT_WATCHLIST_NAME = "Raymond Top 100 BUP"
+PAPER_BASE = "https://paper-api.alpaca.markets"
+LIVE_BASE = "https://api.alpaca.markets"
+
+
+def _load_json(path: str) -> dict:
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _latest_scan() -> dict[str, dict]:
+    d = _load_json(SCAN_FILE)
+    scans = d.get("scans", [])
+    if not scans:
+        return {}
+    return {s["ticker"]: s for s in scans[0].get("stocks", [])}
+
+
+def _latest_catalyst_scores() -> dict[str, dict]:
+    d = _load_json(SCORES_FILE)
+    sessions = d.get("sessions", [])
+    if not sessions:
+        return {}
+    return sessions[-1].get("scores", {})
+
+
+def _latest_prices() -> dict[str, dict]:
+    d = _load_json(PRICE_FILE)
+    return d.get("tickers", {}) or {}
+
+
+def _compute_bup_top(top_n: int) -> list[tuple[str, float]]:
+    scan = _latest_scan()
+    cats = _latest_catalyst_scores()
+    prices = _latest_prices()
+
+    universe = set(scan.keys()) | set(cats.keys())
+    ranked: list[tuple[str, float]] = []
+
+    for ticker in universe:
+        p = (scan.get(ticker) or {}).get("precondition_score", 0) or 0
+        c = (cats.get(ticker) or {}).get("score", 0) or 0
+        total = p + 2 * c
+        pct = (prices.get(ticker) or {}).get("pct_30d")
+        if pct is None:
+            # No price data — skip if there's also no catalyst. With no penalty
+            # info, including high-precondition-only stocks pollutes the list.
+            if c == 0:
+                continue
+            pct = 0.0
+        pct_int = max(round(pct * 100), 0)
+        penalty = math.sqrt(pct_int)
+        bup = total - penalty
+        if bup > 0:
+            ranked.append((ticker, bup))
+
+    ranked.sort(key=lambda r: r[1], reverse=True)
+    return ranked[:top_n]
+
+
+# ── Alpaca HTTP helpers ──────────────────────────────────────────────
+
+class AlpacaError(Exception):
+    pass
+
+
+def _request(method: str, base: str, path: str, key_id: str, secret: str,
+             body: dict | None = None) -> dict | list | None:
+    url = f"{base}{path}"
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    req = urllib.request.Request(url, data=data, method=method)
+    req.add_header("APCA-API-KEY-ID", key_id)
+    req.add_header("APCA-API-SECRET-KEY", secret)
+    if data is not None:
+        req.add_header("Content-Type", "application/json")
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            raw = resp.read().decode("utf-8")
+            return json.loads(raw) if raw else None
+    except urllib.error.HTTPError as e:
+        msg = e.read().decode("utf-8", errors="replace")
+        raise AlpacaError(f"{method} {path} → HTTP {e.code}: {msg}") from e
+
+
+def _find_watchlist(base: str, key_id: str, secret: str, name: str) -> dict | None:
+    try:
+        lists = _request("GET", base, "/v2/watchlists", key_id, secret)
+    except AlpacaError:
+        return None
+    if not isinstance(lists, list):
+        return None
+    for wl in lists:
+        if wl.get("name") == name:
+            return wl
+    return None
+
+
+def _create_watchlist(base: str, key_id: str, secret: str,
+                      name: str, symbols: list[str]) -> dict:
+    return _request("POST", base, "/v2/watchlists", key_id, secret,
+                    {"name": name, "symbols": symbols})  # type: ignore[return-value]
+
+
+def _replace_symbols(base: str, key_id: str, secret: str,
+                     wl_id: str, name: str, symbols: list[str]) -> dict:
+    return _request("PUT", base, f"/v2/watchlists/{wl_id}", key_id, secret,
+                    {"name": name, "symbols": symbols})  # type: ignore[return-value]
+
+
+def _delete_watchlist(base: str, key_id: str, secret: str, wl_id: str) -> None:
+    _request("DELETE", base, f"/v2/watchlists/{wl_id}", key_id, secret)
+
+
+def _add_symbol(base: str, key_id: str, secret: str, wl_id: str, symbol: str) -> None:
+    _request("POST", base, f"/v2/watchlists/{wl_id}", key_id, secret,
+             {"symbol": symbol})
+
+
+# ── Main ─────────────────────────────────────────────────────────────
+
+def push_watchlist(
+    top_n: int = 100,
+    name: str = DEFAULT_WATCHLIST_NAME,
+    live: bool = False,
+) -> None:
+    key_id = os.environ.get("ALPACA_API_KEY_ID", "")
+    secret = os.environ.get("ALPACA_API_SECRET_KEY", "")
+    if not key_id or not secret:
+        print("ALPACA_API_KEY_ID / ALPACA_API_SECRET_KEY not set — skipping watchlist push.")
+        return
+
+    base = os.environ.get("ALPACA_BASE_URL") or (LIVE_BASE if live else PAPER_BASE)
+
+    top = _compute_bup_top(top_n)
+    if not top:
+        print("No BUP scorers found — nothing to push.")
+        return
+
+    symbols = [t for t, _ in top]
+    print(f"\n── Alpaca watchlist push: top {len(symbols)} by BUP ──")
+    print(f"  Endpoint: {base}")
+    print(f"  Watchlist: {name!r}")
+    for i, (t, bup) in enumerate(top[:10], 1):
+        print(f"    {i:2d}. {t:6s}  BUP={bup:.2f}")
+    if len(top) > 10:
+        print(f"    ... and {len(top) - 10} more")
+
+    existing = _find_watchlist(base, key_id, secret, name)
+
+    # Try bulk update first. Alpaca rejects the whole request if any symbol
+    # is invalid, so fall back to per-symbol add-on-failure.
+    try:
+        if existing:
+            wl_id = existing["id"]
+            _replace_symbols(base, key_id, secret, wl_id, name, symbols)
+            print(f"  Replaced {len(symbols)} symbols in existing watchlist.")
+        else:
+            wl = _create_watchlist(base, key_id, secret, name, symbols)
+            print(f"  Created new watchlist with {len(symbols)} symbols.")
+        return
+    except AlpacaError as e:
+        print(f"  Bulk update failed: {e}")
+        print(f"  Falling back to per-symbol add (skipping invalid tickers)...")
+
+    # Fallback: wipe + recreate empty, then add one at a time, swallowing errors
+    if existing:
+        try:
+            _delete_watchlist(base, key_id, secret, existing["id"])
+        except AlpacaError as e:
+            print(f"  Could not delete existing watchlist: {e}")
+            return
+
+    try:
+        wl = _create_watchlist(base, key_id, secret, name, [])
+    except AlpacaError as e:
+        # Empty-symbol create sometimes 400s; try with the first symbol seeded.
+        try:
+            wl = _create_watchlist(base, key_id, secret, name, symbols[:1])
+            symbols = symbols[1:]
+        except AlpacaError as e2:
+            print(f"  Could not create watchlist: {e2}")
+            return
+
+    wl_id = wl["id"]
+    added, skipped = 0, []
+    for sym in symbols:
+        try:
+            _add_symbol(base, key_id, secret, wl_id, sym)
+            added += 1
+        except AlpacaError:
+            skipped.append(sym)
+        time.sleep(0.05)  # 200 req/min Alpaca rate cap, stay polite
+
+    print(f"  Added {added} symbols. Skipped (invalid/untradeable): {len(skipped)}")
+    if skipped:
+        print(f"    {', '.join(skipped[:30])}{' …' if len(skipped) > 30 else ''}")
+
+
+if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--top-n", type=int, default=100)
+    ap.add_argument("--name", type=str, default=DEFAULT_WATCHLIST_NAME)
+    ap.add_argument("--live", action="store_true",
+                    help="Push to live Alpaca account instead of paper (default: paper)")
+    args = ap.parse_args()
+    push_watchlist(top_n=args.top_n, name=args.name, live=args.live)

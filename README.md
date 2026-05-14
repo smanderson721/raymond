@@ -23,6 +23,17 @@ no penalty if the stock has fallen.
 
 - `GEMINI_API_KEY`
 - `FINNHUB_API_KEY`
+- `ALPACA_API_KEY_ID` *(optional — enables watchlist push)*
+- `ALPACA_API_SECRET_KEY` *(optional — enables watchlist push)*
+
+## Alpaca watchlist
+
+If both Alpaca secrets are set, the daily workflow will also push the top 100
+BUP scorers to a watchlist named `Raymond Top 100 BUP` on your Alpaca account
+(paper by default). Defaults to `https://paper-api.alpaca.markets` — pass
+`--live` (and `ALPACA_BASE_URL` if needed) to target a live account.
+
+Sign up for free paper trading API keys at <https://app.alpaca.markets/>.
 
 ## Local dev
 
