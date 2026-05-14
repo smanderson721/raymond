@@ -11,7 +11,7 @@ on:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 350    # market-scan can take ~60 min; price refresh ~10 min
+    timeout-minutes: 360    # GitHub Actions max (6 hours)
     permissions:
       contents: write       # needed to commit JSON back to repo
 
@@ -37,6 +37,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           YFINANCE_RATE_DELAY: "0.1"
+          CATALYST_SCORE_WORKERS: "6"
         run: |
           python pipeline.py --market-scan --news-days 2
 

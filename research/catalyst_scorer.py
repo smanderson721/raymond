@@ -213,28 +213,44 @@ def score_all_catalysts(
 
     scored = 0
     batch_scores = {}
+    batch_lock = None
 
-    for i, entry in enumerate(to_score, 1):
+    # Parallelism: latency-bound (~5-10s per Gemini call), so concurrent
+    # workers give a near-linear speedup until we hit the model's RPM quota.
+    # Configurable via env var; default 6 keeps us safely under typical limits.
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    max_workers = int(os.environ.get("CATALYST_SCORE_WORKERS", "6"))
+    batch_lock = threading.Lock()
+
+    def _do_one(i_entry):
+        i, entry = i_entry
         ticker = entry["ticker"]
         context = _format_stock_context(
             ticker, entry["scan_info"], entry["articles"], entry["filings"]
         )
-
         result = _score_one_stock(client, ticker, context, catalyst_attrs)
-        batch_scores[ticker] = result
-        scored += 1
+        return i, ticker, result
 
-        score = result["score"]
-        label = f"C={score}" if score > 0 else "C=0"
-        print(f"  {i}/{len(to_score)} {ticker:6s} {label}", flush=True)
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futures = [ex.submit(_do_one, (i, e)) for i, e in enumerate(to_score, 1)]
+        for fut in as_completed(futures):
+            i, ticker, result = fut.result()
+            with batch_lock:
+                batch_scores[ticker] = result
+                scored += 1
+                local_scored = scored
+                checkpoint = (local_scored % 50 == 0)
+                if checkpoint:
+                    to_save = batch_scores
+                    batch_scores = {}
 
-        # Save every 50 stocks (checkpoint)
-        if scored % 50 == 0:
-            save_batch_scores(batch_scores, session_note="auto-gemini")
-            batch_scores = {}
+            score = result["score"]
+            label = f"C={score}" if score > 0 else "C=0"
+            print(f"  {i}/{len(to_score)} {ticker:6s} {label}", flush=True)
 
-        # Rate limit: ~15 RPM for flash is safe
-        time.sleep(0.5)
+            if checkpoint:
+                save_batch_scores(to_save, session_note="auto-gemini")
 
     # Save remaining
     if batch_scores:
