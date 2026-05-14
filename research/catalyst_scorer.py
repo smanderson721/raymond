@@ -97,7 +97,7 @@ def _format_stock_context(ticker: str, scan_info: dict,
         lines.append(f"News articles ({len(articles)} total, showing {len(shown)}):")
         for a in shown:
             dt = a.get("datetime", 0)
-            date_str = datetime.fromtimestamp(dt).strftime("%m/%d %H:%M") if dt else "?"
+            date_str = datetime.fromtimestamp(dt).strftime("%Y-%m-%d %H:%M") if dt else "?"
             headline = a.get("headline", "")[:120]
             summary = a.get("summary", "")[:200]
             src = a.get("source", "")
@@ -120,6 +120,8 @@ def _score_one_stock(client, ticker: str, context: str,
 
 IMPORTANT: A "catalyst" is a specific recent NEWS EVENT, filing, or announcement — NOT the stock's technical setup, valuation, or precondition scores. Do NOT restate precondition data (short interest, 52-week position, float size, insider ownership, growth metrics) as catalysts. If the only information is precondition/technical data with no real news events, return total_score: 0.
 
+DATES MATTER. Every event has a date in the context below (articles are tagged [YYYY-MM-DD HH:MM]; filings start with their filing date). In the "blurb" and in every catalyst "detail", you MUST cite the relevant date(s) in YYYY-MM-DD form so the reader knows when each event happened. If multiple events are summarized, cite the date of each.
+
 {context}
 
 Score against these catalyst types (0-10 each, 0 = not present, only score based on actual news/filings):
@@ -128,9 +130,9 @@ Score against these catalyst types (0-10 each, 0 = not present, only score based
 Return a JSON object:
 {{
   "total_score": <sum of all catalyst scores, 0-100>,
-  "blurb": "<1-2 sentence summary of the catalysts found or 'No significant catalysts.'>",
+  "blurb": "<1-2 sentence summary of the catalysts found, WITH the date(s) the events occurred (e.g. 'On 2026-05-12, ...'). Or 'No significant catalysts.'>",
   "catalysts": [
-    {{"id": "catalyst_id", "score": N, "detail": "brief why"}}
+    {{"id": "catalyst_id", "score": N, "date": "YYYY-MM-DD", "detail": "brief why, including the date of the event"}}
   ]
 }}
 
