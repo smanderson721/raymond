@@ -154,23 +154,37 @@ def _add_symbol(base: str, key_id: str, secret: str, wl_id: str, symbol: str) ->
 
 # ── Main ─────────────────────────────────────────────────────────────
 
+def _write_watchlist_txt(top: list[tuple[str, float]]) -> None:
+    """Write the top tickers as a plain-text file for TradingView import."""
+    path = os.path.join(OUTPUT_DIR, "watchlist.txt")
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        for t, _ in top:
+            f.write(t + "\n")
+    print(f"  Wrote {len(top)} tickers to {path}")
+
+
 def push_watchlist(
     top_n: int = 100,
     name: str = DEFAULT_WATCHLIST_NAME,
     live: bool = False,
 ) -> None:
-    key_id = os.environ.get("ALPACA_API_KEY_ID", "")
-    secret = os.environ.get("ALPACA_API_SECRET_KEY", "")
-    if not key_id or not secret:
-        print("ALPACA_API_KEY_ID / ALPACA_API_SECRET_KEY not set — skipping watchlist push.")
-        return
-
-    base = os.environ.get("ALPACA_BASE_URL") or (LIVE_BASE if live else PAPER_BASE)
-
     top = _compute_bup_top(top_n)
     if not top:
         print("No BUP scorers found — nothing to push.")
         return
+
+    # Always write the plain-text watchlist for the public Pages site,
+    # whether or not Alpaca credentials are configured.
+    _write_watchlist_txt(top)
+
+    key_id = os.environ.get("ALPACA_API_KEY_ID", "")
+    secret = os.environ.get("ALPACA_API_SECRET_KEY", "")
+    if not key_id or not secret:
+        print("ALPACA_API_KEY_ID / ALPACA_API_SECRET_KEY not set — skipping Alpaca push.")
+        return
+
+    base = os.environ.get("ALPACA_BASE_URL") or (LIVE_BASE if live else PAPER_BASE)
 
     symbols = [t for t, _ in top]
     print(f"\n── Alpaca watchlist push: top {len(symbols)} by BUP ──")

@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Raymond — Top BUP Watchlist</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root {
+    --bg: #0e0f12;
+    --panel: #16181d;
+    --border: #23262d;
+    --text: #e8ebf0;
+    --muted: #8a92a3;
+    --accent: #ffd23f;
+    --green: #4ade80;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  header {
+    padding: 24px 28px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 6px;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .links {
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .links a {
+    color: var(--accent);
+    margin-right: 18px;
+    text-decoration: none;
+  }
+  .links a:hover { text-decoration: underline; }
+  main { padding: 18px 28px 60px; max-width: 1100px; }
+  .controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin: 12px 0 18px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .controls input[type="number"], .controls input[type="text"] {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font: inherit;
+    width: 80px;
+  }
+  .controls input[type="text"] { width: 160px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  th, td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  th {
+    background: #1a1d23;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    user-select: none;
+  }
+  th:hover { color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1c1f26; }
+  .ticker {
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .blurb {
+    color: var(--muted);
+    max-width: 480px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #status { color: var(--muted); padding: 20px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Raymond — Top BUP Watchlist</h1>
+  <div class="sub" id="meta">loading…</div>
+  <div class="links">
+    <a href="research_output/watchlist.txt">watchlist.txt (TradingView import)</a>
+    <a href="research_output/catalyst_scores.json">catalyst_scores.json</a>
+    <a href="research_output/scan_results.json">scan_results.json</a>
+    <a href="https://github.com/smanderson721/raymond">repo</a>
+  </div>
+</header>
+<main>
+  <div class="controls">
+    <label>Top N: <input type="number" id="topN" value="100" min="10" max="500" step="10"></label>
+    <label>Filter: <input type="text" id="filter" placeholder="ticker or text…"></label>
+    <label><input type="checkbox" id="catalystOnly" checked> Catalyst only</label>
+    <span id="count"></span>
+  </div>
+  <div id="status">Loading…</div>
+  <table id="tbl" style="display:none">
+    <thead>
+      <tr>
+        <th data-k="rank">#</th>
+        <th data-k="ticker">Ticker</th>
+        <th data-k="bup" class="num">BUP</th>
+        <th data-k="precondition" class="num">P</th>
+        <th data-k="catalyst" class="num">C</th>
+        <th data-k="pct_30d" class="num">30d %</th>
+        <th data-k="price" class="num">Price</th>
+        <th data-k="blurb">Catalyst</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</main>
+
+<script>
+const SCAN_URL = "research_output/scan_results.json";
+const SCORES_URL = "research_output/catalyst_scores.json";
+const PRICE_URL = "research_output/price_data.json";
+
+async function fetchJson(url) {
+  try {
+    const r = await fetch(url + "?t=" + Date.now());
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+function fmt(n, d = 2) {
+  if (n === null || n === undefined || Number.isNaN(n)) return "—";
+  return Number(n).toFixed(d);
+}
+
+function pctClass(n) {
+  if (n === null || n === undefined) return "";
+  return n >= 0 ? "pos" : "neg";
+}
+
+let rows = [];
+let sortKey = "bup";
+let sortDir = -1;
+
+function compute(scanData, scoresData, priceData) {
+  const latestScan = (scanData && scanData.scans && scanData.scans[0]) || null;
+  const scanMap = {};
+  if (latestScan) {
+    for (const s of latestScan.stocks) scanMap[s.ticker] = s;
+  }
+  const sessions = (scoresData && scoresData.sessions) || [];
+  const latestScores = sessions.length ? sessions[sessions.length - 1].scores : {};
+  const prices = (priceData && priceData.tickers) || {};
+
+  const universe = new Set([...Object.keys(scanMap), ...Object.keys(latestScores)]);
+  const out = [];
+  for (const ticker of universe) {
+    const scan = scanMap[ticker] || {};
+    const cat = latestScores[ticker] || {};
+    const price = prices[ticker] || {};
+    const p = scan.precondition_score || 0;
+    const c = cat.score || 0;
+    let pct = price.pct_30d;
+    if (pct === null || pct === undefined) {
+      if (!c) continue;
+      pct = 0;
+    }
+    const pctInt = Math.max(Math.round(pct * 100), 0);
+    const penalty = Math.sqrt(pctInt);
+    const bup = p + 2 * c - penalty;
+    if (bup <= 0) continue;
+    out.push({
+      ticker,
+      bup,
+      precondition: p,
+      catalyst: c,
+      pct_30d: pct,
+      price: price.price ?? scan.price ?? null,
+      blurb: cat.blurb || "",
+      hasCatalyst: c > 0,
+    });
+  }
+  return { rows: out, scanDate: latestScan?.timestamp, scoresDate: sessions[sessions.length - 1]?.date };
+}
+
+function render() {
+  const topN = parseInt(document.getElementById("topN").value, 10) || 100;
+  const filter = document.getElementById("filter").value.trim().toLowerCase();
+  const catOnly = document.getElementById("catalystOnly").checked;
+
+  let r = rows.slice();
+  if (catOnly) r = r.filter(x => x.hasCatalyst);
+  if (filter) {
+    r = r.filter(x =>
+      x.ticker.toLowerCase().includes(filter) ||
+      (x.blurb && x.blurb.toLowerCase().includes(filter))
+    );
+  }
+  r.sort((a, b) => {
+    const av = a[sortKey], bv = b[sortKey];
+    if (av === bv) return 0;
+    if (av === null || av === undefined) return 1;
+    if (bv === null || bv === undefined) return -1;
+    if (typeof av === "string") return av.localeCompare(bv) * sortDir;
+    return (av - bv) * sortDir;
+  });
+  r = r.slice(0, topN);
+
+  const tbody = document.querySelector("#tbl tbody");
+  tbody.innerHTML = r.map((x, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td class="ticker">${x.ticker}</td>
+      <td class="num"><strong>${fmt(x.bup, 1)}</strong></td>
+      <td class="num">${fmt(x.precondition, 0)}</td>
+      <td class="num">${fmt(x.catalyst, 0)}</td>
+      <td class="num ${pctClass(x.pct_30d)}">${x.pct_30d != null ? fmt(x.pct_30d * 100, 1) + "%" : "—"}</td>
+      <td class="num">${x.price != null ? "$" + fmt(x.price, 2) : "—"}</td>
+      <td class="blurb" title="${(x.blurb || '').replace(/"/g, '&quot;')}">${x.blurb || ""}</td>
+    </tr>
+  `).join("");
+  document.getElementById("count").textContent = `Showing ${r.length} of ${rows.length}`;
+}
+
+async function main() {
+  const [scan, scores, prices] = await Promise.all([
+    fetchJson(SCAN_URL),
+    fetchJson(SCORES_URL),
+    fetchJson(PRICE_URL),
+  ]);
+  if (!scan && !scores) {
+    document.getElementById("status").textContent = "Failed to load data.";
+    return;
+  }
+  const result = compute(scan, scores, prices);
+  rows = result.rows;
+
+  const meta = [];
+  if (result.scoresDate) meta.push(`Catalyst scores: ${result.scoresDate}`);
+  if (result.scanDate) meta.push(`Precondition scan: ${result.scanDate.slice(0, 10)}`);
+  meta.push(`${rows.length} ranked stocks`);
+  document.getElementById("meta").textContent = meta.join(" · ");
+
+  document.getElementById("status").style.display = "none";
+  document.getElementById("tbl").style.display = "";
+
+  document.getElementById("topN").addEventListener("input", render);
+  document.getElementById("filter").addEventListener("input", render);
+  document.getElementById("catalystOnly").addEventListener("change", render);
+  document.querySelectorAll("th[data-k]").forEach(th => {
+    th.addEventListener("click", () => {
+      const k = th.dataset.k;
+      if (k === sortKey) sortDir = -sortDir;
+      else { sortKey = k; sortDir = k === "ticker" ? 1 : -1; }
+      render();
+    });
+  });
+  render();
+}
+
+main();
+</script>
+</body>
+</html>
