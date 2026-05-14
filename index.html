@@ -134,8 +134,11 @@
         <th data-k="bup" class="num">BUP</th>
         <th data-k="precondition" class="num">P</th>
         <th data-k="catalyst" class="num">C</th>
-        <th data-k="pct_30d" class="num">30d %</th>
         <th data-k="price" class="num">Price</th>
+        <th data-k="change" class="num">Δ</th>
+        <th data-k="pct_1d" class="num">1d %</th>
+        <th data-k="pct_7d" class="num">7d %</th>
+        <th data-k="pct_30d" class="num">30d %</th>
         <th data-k="blurb">Catalyst</th>
       </tr>
     </thead>
@@ -205,6 +208,9 @@ function compute(scanData, scoresData, priceData) {
       precondition: p,
       catalyst: c,
       pct_30d: pct,
+      pct_1d: price.pct_1d ?? null,
+      pct_7d: price.pct_7d ?? null,
+      change: price.change ?? null,
       price: price.price ?? scan.price ?? null,
       blurb: cat.blurb || "",
       hasCatalyst: c > 0,
@@ -244,8 +250,11 @@ function render() {
       <td class="num"><strong>${fmt(x.bup, 1)}</strong></td>
       <td class="num">${fmt(x.precondition, 0)}</td>
       <td class="num">${fmt(x.catalyst, 0)}</td>
-      <td class="num ${pctClass(x.pct_30d)}">${x.pct_30d != null ? fmt(x.pct_30d * 100, 1) + "%" : "—"}</td>
       <td class="num">${x.price != null ? "$" + fmt(x.price, 2) : "—"}</td>
+      <td class="num ${pctClass(x.change)}">${x.change != null ? (x.change >= 0 ? "+" : "") + fmt(x.change, 2) : "—"}</td>
+      <td class="num ${pctClass(x.pct_1d)}">${x.pct_1d != null ? fmt(x.pct_1d * 100, 2) + "%" : "—"}</td>
+      <td class="num ${pctClass(x.pct_7d)}">${x.pct_7d != null ? fmt(x.pct_7d * 100, 1) + "%" : "—"}</td>
+      <td class="num ${pctClass(x.pct_30d)}">${x.pct_30d != null ? fmt(x.pct_30d * 100, 1) + "%" : "—"}</td>
       <td class="blurb" title="${(x.blurb || '').replace(/"/g, '&quot;')}">${x.blurb || ""}</td>
     </tr>
   `).join("");

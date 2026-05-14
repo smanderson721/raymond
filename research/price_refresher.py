@@ -80,7 +80,7 @@ def _select_universe(top_n: int = 250) -> list[str]:
 
 
 def _fetch_pct_30d(ticker: str) -> dict | None:
-    """30-day rise from low close → today's close. Decimal (0.2 = 20%)."""
+    """Capture today's close, daily change, 7d change, and 30d rise."""
     import yfinance as yf
     import logging
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)
@@ -89,13 +89,29 @@ def _fetch_pct_30d(ticker: str) -> dict | None:
         hist = t.history(period="1mo")
         if len(hist) < 2:
             return None
-        low_close = float(hist["Close"].min())
-        new_close = float(hist["Close"].iloc[-1])
-        if low_close <= 0:
+        closes = hist["Close"].tolist()
+        new_close = float(closes[-1])
+        prev_close = float(closes[-2])
+        low_close = float(min(closes))
+        if low_close <= 0 or prev_close <= 0:
             return None
+        # 7-day prior close: ~5 trading days back
+        seven_close = float(closes[-6]) if len(closes) >= 6 else prev_close
+        # Absolute daily dollar move
+        change = new_close - prev_close
+        # Today's volume (last bar)
+        try:
+            volume = int(hist["Volume"].iloc[-1])
+        except Exception:
+            volume = None
         return {
             "price": new_close,
+            "prev_close": prev_close,
+            "change": change,
+            "pct_1d": (new_close - prev_close) / prev_close,
+            "pct_7d": (new_close - seven_close) / seven_close if seven_close > 0 else None,
             "pct_30d": (new_close - low_close) / low_close,
+            "volume": volume,
         }
     except Exception:
         return None
@@ -121,8 +137,9 @@ def refresh_prices(top_n: int = 250) -> dict:
             print(f"  {i}/{len(universe)} {ticker} — FAILED", flush=True)
         else:
             results[ticker] = data
-            pct = data["pct_30d"] * 100
-            print(f"  {i}/{len(universe)} {ticker} — {pct:+.1f}%", flush=True)
+            d = data["pct_1d"] * 100
+            m = data["pct_30d"] * 100
+            print(f"  {i}/{len(universe)} {ticker} — 1d {d:+.1f}%  30d {m:+.1f}%", flush=True)
         if rate_delay > 0:
             time.sleep(rate_delay)
 
