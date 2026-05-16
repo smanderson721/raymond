@@ -81,13 +81,16 @@ def _compute_bup_top(top_n: int) -> list[tuple[str, float]]:
         c = (cats.get(ticker) or {}).get("score", 0) or 0
         total = p + 2 * c
         pct = (prices.get(ticker) or {}).get("pct_30d")
-        if pct is None:
-            # No price data — skip if there's also no catalyst. With no penalty
-            # info, including high-precondition-only stocks pollutes the list.
+        # Guard against None / NaN / inf from yfinance.
+        try:
+            pct_ok = pct is not None and math.isfinite(float(pct))
+        except (TypeError, ValueError):
+            pct_ok = False
+        if not pct_ok:
             if c == 0:
                 continue
             pct = 0.0
-        pct_int = max(round(pct * 100), 0)
+        pct_int = max(round(float(pct) * 100), 0)
         penalty = math.sqrt(pct_int)
         bup = total - penalty
         if bup > 0:
