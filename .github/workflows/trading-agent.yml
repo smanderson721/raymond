@@ -1,0 +1,104 @@
+name: Trading Agent (ATA)
+
+# Runs after the Daily Catalyst Scan publishes a fresh watchlist_combined.json.
+# Pulls the top-10 BUP tickers, runs huygiatrng/AlpacaTradingAgent (LangGraph
+# multi-agent: Market/News/Social/Fundamentals/Macro analysts + Bull/Bear
+# researcher debate + Trader + Risk panel) against each one, and commits the
+# decisions JSON back to research_output/ata_decisions/.
+#
+# Models: gemini-3.1-flash-lite for both quick and deep tiers (cost-bounded).
+# Alpaca: paper trading only (ALPACA_USE_PAPER=True). Currently the agent
+# emits BUY/HOLD/SELL recommendations; no orders are placed.
+on:
+  workflow_run:
+    workflows: ["Daily Catalyst Scan"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      top:
+        description: "Number of top BUP tickers to analyze"
+        default: "10"
+
+jobs:
+  trade:
+    runs-on: ubuntu-latest
+    # Only run if the upstream catalyst scan succeeded (skip on cancelled/failed).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    timeout-minutes: 240
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout raymond
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # workflow_run launches against the default branch SHA, but the
+          # catalyst scan commits before triggering us — pull latest main so
+          # we see the freshly-pushed watchlist.
+          ref: main
+          fetch-depth: 1
+
+      - name: Pull latest (catalyst scan commit)
+        run: git pull --ff-only origin main
+
+      - name: Clone AlpacaTradingAgent
+        run: |
+          git clone --depth 1 https://github.com/huygiatrng/AlpacaTradingAgent.git ata
+          echo "ATA_DIR=$GITHUB_WORKSPACE/ata" >> $GITHUB_ENV
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            ata/requirements.txt
+
+      - name: Install raymond + ATA deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r ata/requirements.txt
+
+      - name: Run trading agent on top BUP tickers
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
+          ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          ATA_QUICK_LLM: "gemini-3.1-flash-lite"
+          ATA_DEEP_LLM:  "gemini-3.1-flash-lite"
+          ATA_DEBATE_ROUNDS: "2"
+          ATA_RISK_ROUNDS:   "2"
+        run: |
+          python run_ata.py \
+              --ata-dir "$ATA_DIR" \
+              --top "${{ github.event.inputs.top || '10' }}" \
+              --debug
+
+      - name: Commit decisions
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p research_output/ata_decisions
+          git add research_output/ata_decisions/ || true
+          if git diff --staged --quiet; then
+            echo "No new decisions to commit."
+          else
+            git commit -m "auto: ATA decisions ($(date -u +%F)) [skip ci]"
+            git pull --rebase origin main || true
+            git push
+          fi
+
+      - name: Upload analyst reports as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ata-eval-results-${{ github.run_id }}
+          path: ata/eval_results/
+          retention-days: 14
+          if-no-files-found: ignore
