@@ -1,4 +1,4 @@
-name: Trading Agent (ATA)
+name: AlpacaTradingAgent (paper)
 
 # Runs after the Daily Catalyst Scan publishes a fresh watchlist_combined.json.
 # Pulls the top-10 BUP tickers, runs huygiatrng/AlpacaTradingAgent (LangGraph
