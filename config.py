@@ -22,4 +22,4 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY", "")
 
 # Gemini model used for catalyst scoring
-MODEL_RESEARCH = "gemini-3-flash-preview"
+MODEL_RESEARCH = "gemini-3.1-flash-lite"
