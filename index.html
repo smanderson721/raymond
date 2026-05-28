@@ -498,7 +498,78 @@ tick();
 
 renderScanStrip([]);  // show pending tiles before first poll
 poll();
-setInterval(poll, POLL_INTERVAL);
+
+// ── Live updates via SSE (live_daemon) with poll fallback ────────────
+//
+// When the dashboard is served by raymond/live_daemon.py on alice, the
+// daemon exposes /api/stream as an EventSource. Each `scan` or `data`
+// event triggers an immediate poll() so the UI updates the moment a
+// scan completes — no more 6s polling latency.
+//
+// If SSE isn't available (e.g. served from GitHub Pages still), we
+// fall back to the original 6s polling cadence.
+
+let sseConnected = false;
+let pollTimer = setInterval(poll, POLL_INTERVAL);
+let pollSoonTimer = null;
+
+function pollSoon() {
+  // debounce: many `data` events may arrive in quick succession when
+  // a scan finishes and rewrites multiple JSON files.
+  if (pollSoonTimer) return;
+  pollSoonTimer = setTimeout(() => {
+    pollSoonTimer = null;
+    poll();
+  }, 150);
+}
+
+function setLiveStatus(mode) {
+  const f = document.getElementById("f-status");
+  if (mode === "sse") { f.textContent = "live ⚡"; f.className = "ok"; }
+  else if (mode === "poll") { f.textContent = "polling"; f.className = "ok"; }
+  else if (mode === "lost") { f.textContent = "reconnecting…"; f.className = "stale"; }
+}
+
+function connectSSE() {
+  // EventSource auto-reconnects, but we wrap it so we can switch the
+  // background poll cadence between "fast safety net" (no SSE) and
+  // "slow heartbeat" (SSE alive).
+  let es;
+  try { es = new EventSource("/api/stream"); }
+  catch { setLiveStatus("poll"); return; }
+
+  es.addEventListener("open", () => {
+    sseConnected = true;
+    setLiveStatus("sse");
+    clearInterval(pollTimer);
+    pollTimer = setInterval(poll, 30000);   // 30s heartbeat as backup
+  });
+
+  es.addEventListener("scan", (ev) => {
+    pollSoon();
+  });
+
+  es.addEventListener("data", (ev) => {
+    pollSoon();
+  });
+
+  es.addEventListener("error", () => {
+    if (sseConnected) {
+      sseConnected = false;
+      setLiveStatus("lost");
+      clearInterval(pollTimer);
+      pollTimer = setInterval(poll, POLL_INTERVAL);
+    }
+    // EventSource itself will retry; if the daemon isn't there at all,
+    // we just keep polling at POLL_INTERVAL.
+  });
+}
+
+// Probe /healthz: if it answers, the daemon is in front of us → SSE.
+// Otherwise we're on plain GH Pages → stick with polling.
+fetch("/healthz", { cache: "no-store" })
+  .then(r => { if (r.ok) connectSSE(); else setLiveStatus("poll"); })
+  .catch(() => setLiveStatus("poll"));
 </script>
 </body>
 </html>
