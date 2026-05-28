@@ -163,15 +163,33 @@ def _fetch_baselines_sync(tickers: list[str]) -> dict[str, float]:
 # ── watchlist plumbing ────────────────────────────────────────────────
 
 def _load_watchlist_topN() -> list[str]:
-    """Read the daemon's watchlist.json and return the top-N tickers."""
+    """Read the daemon's watchlist.json and return the top-N tickers.
+
+    Tickers are filtered to plain alphabetic symbols + optional ``.X``
+    class suffix (e.g. ``BRK.B``). The upstream watchlist occasionally
+    contains odd entries like ``FDXF#`` (placeholder rows from broken
+    Form 4 cluster rows) — those would break yfinance baseline lookups
+    and get rejected by Alpaca anyway.
+    """
     if not WATCHLIST_FILE.exists():
         return []
     try:
         blob = json.loads(WATCHLIST_FILE.read_text())
     except Exception:
         return []
-    rows = blob.get("watchlist", [])[:TOP_N]
-    return [r.get("ticker") for r in rows if r.get("ticker")]
+    out: list[str] = []
+    for r in blob.get("watchlist", []):
+        tk = (r.get("ticker") or "").upper()
+        # allow A-Z and a single .X class suffix
+        if not tk:
+            continue
+        head, _, tail = tk.partition(".")
+        if not head.isalpha() or (tail and not tail.isalpha()):
+            continue
+        out.append(tk)
+        if len(out) >= TOP_N:
+            break
+    return out
 
 
 # ── status sidecar ────────────────────────────────────────────────────
