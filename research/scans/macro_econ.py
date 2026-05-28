@@ -46,20 +46,20 @@ SERIES = {
 }
 
 
-def _fetch_series(sid: str, api_key: str) -> list[dict] | None:
+def _fetch_series(sid: str, api_key: str) -> tuple[list[dict] | None, str]:
     try:
         r = requests.get(FRED_BASE, params={
             "series_id": sid, "api_key": api_key, "file_type": "json",
             "sort_order": "desc", "limit": 6,
         }, timeout=15)
         if r.status_code != 200:
-            return None
+            return None, f"http {r.status_code}: {r.text[:120]}"
         data = r.json()
         obs = data.get("observations") or []
         # filter out '.' (FRED missing data marker)
-        return [o for o in obs if o.get("value") not in (None, "", ".")]
-    except Exception:
-        return None
+        return [o for o in obs if o.get("value") not in (None, "", ".")], "ok"
+    except Exception as e:
+        return None, f"exc {type(e).__name__}: {str(e)[:120]}"
 
 
 def _load_cache() -> dict:
@@ -79,7 +79,7 @@ def _save_cache(cache: dict) -> None:
 
 
 def run() -> dict:
-    api_key = os.environ.get("FRED_API_KEY")
+    api_key = (os.environ.get("FRED_API_KEY") or "").strip()
     if not api_key:
         with Session(SCAN_NAME, note="FRED macro series + releases") as s:
             s.log("FRED_API_KEY not set — skipping", level="info")
@@ -92,9 +92,9 @@ def run() -> dict:
 
     with Session(SCAN_NAME, note="FRED macro series + releases") as s:
         for sid, (label, unit, threshold) in SERIES.items():
-            obs = _fetch_series(sid, api_key)
+            obs, why = _fetch_series(sid, api_key)
             if not obs:
-                s.log(f"{sid}: fetch failed", level="info")
+                s.log(f"{sid}: fetch failed — {why}", level="info")
                 continue
             latest = obs[0]
             try:
