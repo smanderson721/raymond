@@ -1,0 +1,79 @@
+name: Live Scans
+
+# Continuous market scans. Each scan writes events + scores into
+# data/live/*.json and commits them back to main so the GitHub Pages
+# dashboard can poll for updates.
+#
+# Cron schedules (UTC):
+#   macro_regime — every 15 min (env scan, ~30s wall time)
+#   tech_slice   — every 15 min, offset (~2 min wall time, rolling 400 tickers)
+#
+# Both jobs use a single concurrency group so they serialise — this
+# prevents racing commits and keeps the event log monotonic.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"        # macro_regime — top of every 15 min
+    - cron: "7-59/15 * * * *"     # tech_slice  — offset by 7 min
+  workflow_dispatch:
+    inputs:
+      scan:
+        description: "Scan to run (macro_regime, tech_slice)"
+        required: true
+        default: "macro_regime"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Pick scan from cron schedule
+        id: pick
+        run: |
+          if [[ -n "${{ github.event.inputs.scan }}" ]]; then
+            echo "scan=${{ github.event.inputs.scan }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event.schedule }}" == "*/15 * * * *" ]]; then
+            echo "scan=macro_regime" >> "$GITHUB_OUTPUT"
+          else
+            echo "scan=tech_slice" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run scan
+        run: python scan_runner.py "${{ steps.pick.outputs.scan }}"
+
+      - name: Commit live data
+        run: |
+          git config user.name  "raymond-bot"
+          git config user.email "raymond-bot@users.noreply.github.com"
+          git add data/live/*.json
+          if git diff --staged --quiet; then
+            echo "no changes"
+            exit 0
+          fi
+          # rebase-and-push handles concurrent runs
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main || true
+            if git push origin main; then exit 0; fi
+            sleep 5
+          done
+          exit 1

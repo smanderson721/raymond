@@ -1,0 +1,2 @@
+# Keep live-scan JSON commits from polluting `git blame` & diff stats.
+data/live/*.json linguist-generated=true -diff

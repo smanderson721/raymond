@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Raymond — Data Sources & Signal Catalog</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root {
+    --bg: #0e0f12;
+    --panel: #16181d;
+    --panel2: #1c1f26;
+    --border: #23262d;
+    --text: #e8ebf0;
+    --muted: #8a92a3;
+    --accent: #ffd23f;
+    --green: #4ade80;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --orange: #fb923c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  header {
+    padding: 28px 32px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  h2 {
+    font-size: 17px;
+    margin: 36px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    color: var(--accent);
+  }
+  h3 { font-size: 14px; margin: 18px 0 6px; color: var(--blue); }
+  .sub { color: var(--muted); font-size: 13px; }
+  main { padding: 18px 32px 80px; max-width: 1200px; }
+  p { margin: 8px 0; }
+  code {
+    background: var(--panel2);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 12.5px;
+    color: var(--accent);
+  }
+  pre {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    overflow-x: auto;
+    font-size: 12.5px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 10px 0 18px;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: var(--panel2);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  tr:last-child td { border-bottom: none; }
+  .have { color: var(--green); font-weight: 600; }
+  .partial { color: var(--accent); font-weight: 600; }
+  .miss { color: var(--red); font-weight: 600; }
+  .free { color: var(--green); }
+  .cheap { color: var(--accent); }
+  .paid { color: var(--orange); }
+  .callout {
+    background: var(--panel);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout.q { border-left-color: var(--blue); }
+  .callout.rec { border-left-color: var(--green); }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--panel2);
+    color: var(--muted);
+    margin-right: 4px;
+  }
+  .pill.priority-1 { background: #4a1d1d; color: var(--red); }
+  .pill.priority-2 { background: #4a3a1d; color: var(--accent); }
+  .pill.priority-3 { background: #1d3a4a; color: var(--blue); }
+  ul { margin: 6px 0 10px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  .toc {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 18px;
+    margin: 14px 0 22px;
+    columns: 2;
+    font-size: 13px;
+  }
+  .toc a { color: var(--blue); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Raymond — Data Sources &amp; Signal Catalog</h1>
+  <div class="sub">
+    Everything we currently look at, what we're missing, where to get it,
+    and a recommended priority for filling the gaps. Built around the
+    BUP++ catalyst-driven small/mid-cap swing strategy.
+  </div>
+</header>
+
+<main>
+
+<div class="toc">
+  <a href="#answers">0 · Quick answers (Alpaca vs yfinance, volume)</a><br>
+  <a href="#frequency">0.5 · Frequency tiers &amp; cascading sieve</a><br>
+  <a href="#legend">Legend</a><br>
+  <a href="#price">1 · Price action &amp; technicals</a><br>
+  <a href="#volume">2 · Volume signals</a><br>
+  <a href="#float">3 · Float, short interest, dilution</a><br>
+  <a href="#insider">4 · Insider transactions</a><br>
+  <a href="#inst">5 · Institutional ownership</a><br>
+  <a href="#earnings">6 · Earnings &amp; analyst</a><br>
+  <a href="#news">7 · News &amp; catalysts</a><br>
+  <a href="#filings">8 · SEC filings</a><br>
+  <a href="#options">9 · Options flow</a><br>
+  <a href="#darkpool">10 · Dark pool / off-exchange</a><br>
+  <a href="#fundamentals">11 · Fundamentals</a><br>
+  <a href="#sentiment">12 · Sentiment &amp; social</a><br>
+  <a href="#calendar">13 · Event calendars</a><br>
+  <a href="#sector">14 · Sector / peer rotation</a><br>
+  <a href="#macro">15 · Macro regime</a><br>
+  <a href="#priorities">16 · Recommended priorities</a>
+</div>
+
+<!-- ========================================================== -->
+<h2 id="answers">0 · Quick answers</h2>
+
+<div class="callout q">
+  <strong>Q1: Alpaca Market Data vs yfinance for technical setups?</strong>
+  <p>
+    Use <strong>both</strong>, for different jobs.
+    <strong>yfinance is the right tool for the nightly daily-bar scan</strong>
+    (1y of OHLCV × ~6000 tickers in batched downloads, free, no quota,
+    indicator computation done locally with pandas in <code>tech_scan.py</code>).
+    Yahoo's daily data is split/dividend-adjusted and consensus-quality
+    for the close-of-day swing setups we care about.
+  </p>
+  <p>
+    <strong>Alpaca becomes essential the moment we want intraday or
+    real-time</strong>: premarket gappers, intraday RVOL during the
+    trading day, level-1 quotes, minute bars for entry timing, and
+    eventually live execution. We already have Alpaca keys for the news
+    API, so adding bars/quotes is just additional endpoints.
+  </p>
+  <ul>
+    <li><strong>yfinance wins:</strong> nightly batch daily bars, free
+      fundamentals/holders/earnings, no rate limit grief on bulk
+      downloads, ~6000 tickers in a few minutes.</li>
+    <li><strong>Alpaca wins:</strong> intraday minute bars, premarket /
+      after-hours bars, real-time trades &amp; quotes (IEX feed free,
+      SIP $99/mo), bulk multi-symbol bar endpoint, institutional data
+      lineage.</li>
+    <li><strong>Big caveat on free Alpaca:</strong> the free tier is
+      <strong>IEX-only</strong>, which is ~2–3% of consolidated volume.
+      Fine for last-trade snapshots and price discovery on liquid names;
+      bad for accurate RVOL on microcaps. SIP ($99/mo personal) gives
+      the full consolidated tape and is what we'd want if intraday RVOL
+      becomes part of the strategy.</li>
+    <li><strong>Polygon</strong> is the third option — $29–$199/mo,
+      better historical depth than Alpaca, includes 13F &amp; financials
+      bundled. Not worth it while yfinance daily + Alpaca news covers us.</li>
+  </ul>
+</div>
+
+<div class="callout q">
+  <strong>Q2: Volume — what did you propose, and what do we actually have?</strong>
+  <p>
+    Already wired into <code>tech_scan.py</code>:
+  </p>
+  <ul>
+    <li><code>vol_ratio_5_60</code> — last-5d average volume / prior-55d
+      average. &gt; 1.5 is "stepped up." Used in the breakout-day-1
+      regime classifier and consumed by the BUP++ regime score.</li>
+  </ul>
+  <p>What's <em>still missing</em> on volume that would meaningfully improve signal:</p>
+  <ul>
+    <li><strong>Dollar volume floor</strong> (close × volume, 20d avg) —
+      gate liquidity properly. A $0.50 ticker doing 5M shares is
+      $2.5M/day — fine for a $500 paper position, dangerous for size.
+      <em>Trivial to add to tech_scan, just one extra field.</em></li>
+    <li><strong>Float turnover ratio</strong> (today's volume / free float)
+      — the canonical squeeze precursor. &gt; 100% turnover in a day is
+      a huge tell. Needs reliable float (Finnhub, not yfinance, for microcaps).</li>
+    <li><strong>OBV / accumulation-distribution slope</strong> —
+      directional volume divergence. Compute locally from existing bars,
+      no new data fetch.</li>
+    <li><strong>Up-day vs down-day volume ratio (20d)</strong> —
+      cleaner accumulation read than OBV.</li>
+    <li><strong>Intraday RVOL</strong> (volume by hour vs typical
+      volume by hour, sampled mid-session) — requires Alpaca minute bars.
+      This is the single biggest add for catching breakouts <em>during</em>
+      the day rather than at close.</li>
+    <li><strong>Premarket / extended-hours volume</strong> — only
+      available through Alpaca (yfinance does not surface premarket bars
+      reliably). Big tell on overnight news reactions.</li>
+  </ul>
+</div>
+
+<!-- ========================================================== -->
+<h2 id="frequency">0.5 · Frequency tiers &amp; cascading sieve</h2>
+
+<p>
+  My earlier 30-minute estimate was wrong. Real nightly scans take hours,
+  and forcing every dimension onto the same cron is both expensive and
+  wasteful — float doesn't fluctuate hourly, but RVOL does. The right model
+  is <strong>multiple crons at different frequencies, where slower tiers
+  sieve the universe that faster tiers scan</strong>.
+</p>
+
+<p>
+  The sieve cutoffs are now driven by <strong>information freshness</strong>,
+  not by computational shortcuts. A name excluded from intraday scanning
+  because its weekly structural score is poor is genuinely not a candidate
+  today — we're not hiding information, we're matching scan cadence to
+  data freshness.
+</p>
+
+<h3>Five frequency tiers</h3>
+
+<table>
+  <tr>
+    <th>Tier</th><th>Cadence</th><th>What changes at this rate</th><th>Universe size</th><th>Wall time</th>
+  </tr>
+  <tr>
+    <td><strong>T0</strong> Event-driven</td>
+    <td>every 5 min, market hours + 1h pre/post</td>
+    <td>Breaking news (Alpaca/Benzinga), new EDGAR filings (8-K, 13D/G, S-1), halts</td>
+    <td>~6000 (cheap polls)</td>
+    <td>&lt; 1 min</td>
+  </tr>
+  <tr>
+    <td><strong>T1</strong> Intraday</td>
+    <td>every 15 min, market hours</td>
+    <td>Live price, intraday RVOL, premarket bars, sector ETF tape, VIX</td>
+    <td><strong>~300 (T2 watchlist only)</strong></td>
+    <td>1–3 min per pass</td>
+  </tr>
+  <tr>
+    <td><strong>T2</strong> Daily</td>
+    <td>once daily, ~5:30pm ET</td>
+    <td>Daily bars + all indicators, regime, earnings dates, FINRA Reg SHO, insider Form 4, macro close levels, sector RS, news catalyst rollup, Gemini catalyst scoring</td>
+    <td><strong>~1500 (T3 candidates)</strong></td>
+    <td>20–40 min</td>
+  </tr>
+  <tr>
+    <td><strong>T3</strong> Weekly</td>
+    <td>Saturday morning</td>
+    <td>Float, short interest, days-to-cover, options chains (P/C, IV rank, OI), analyst consensus &amp; revisions, cluster-buying rollup, off-exchange short volume trend</td>
+    <td><strong>~3500 (T4 admitted)</strong></td>
+    <td>2–4 hours (mostly Finnhub + options chains)</td>
+  </tr>
+  <tr>
+    <td><strong>T4</strong> Monthly / quarterly</td>
+    <td>1st of month, plus event-anchored on filings</td>
+    <td>13F holdings &amp; diffs, 10-K/10-Q fundamentals, institutional ownership %, insider ownership %, cash runway, lock-up calendar</td>
+    <td><strong>~6000 (full universe)</strong></td>
+    <td>4–8 hours (one-shot, runs over weekend)</td>
+  </tr>
+</table>
+
+<h3>The cascading sieve</h3>
+
+<p>
+  Each tier produces a <strong>quality score</strong> for its slice of
+  attributes, and emits the universe of names that pass into the next-faster
+  tier. No information is discarded — every ticker still has a row at every
+  tier; the cascade just decides which rows get the expensive faster scans.
+</p>
+
+<pre>
+T4 (monthly):    all 6000           → "structurally sound"   universe ~3500
+                                       (drops: shells, no fundamentals,
+                                        deeply distressed, no float data)
+T3 (weekly):     3500                → "tradable swing candidates" ~1500
+                                       (drops: no SI/float, illiquid by
+                                        dollar volume, no recent options OI)
+T2 (daily):      1500                → "active watchlist"      ~300
+                                       (drops: bad regime, blown-up,
+                                        no recent volume or news, dead chart)
+T1 (intraday):   300                 → "today's setups"         ~30–80
+                                       (drops: no RVOL pickup, no premarket
+                                        interest, sector down hard)
+T0 (event):      ANY ticker          → can <em>promote</em> into T1 on a
+                                       fresh 8-K, halt resume, or news hit
+</pre>
+
+<p>
+  <strong>T0 is a special case</strong> — it never drops anyone, it only
+  <em>promotes</em>. A microcap that failed T2's regime filter yesterday but
+  files an 8-K announcing FDA approval at 9:47am jumps straight onto the
+  intraday watchlist for the day. The slow-tier scores are a baseline,
+  not a permanent verdict.
+</p>
+
+<h3>Per-tier score &amp; output file</h3>
+
+<table>
+  <tr>
+    <th>Tier</th><th>Score name</th><th>Inputs</th><th>Output file</th><th>Used by</th>
+  </tr>
+  <tr>
+    <td>T4</td>
+    <td><code>structural_score</code></td>
+    <td>Fundamentals, runway, ownership, 13F, lock-up exposure</td>
+    <td><code>structural_universe.json</code></td>
+    <td>T3 sieve gate</td>
+  </tr>
+  <tr>
+    <td>T3</td>
+    <td><code>setup_score</code></td>
+    <td>Float turnover capacity, SI &amp; days-to-cover, options skew, analyst trend, cluster-buy flag, FINRA short trend</td>
+    <td><code>setup_universe.json</code></td>
+    <td>T2 sieve gate</td>
+  </tr>
+  <tr>
+    <td>T2</td>
+    <td><code>bup_plus_pre_news</code> &amp; <code>bup_plus_final</code></td>
+    <td>Daily bars, indicators, regime, volume features, macro multiplier, earnings proximity, insider 90d, news catalyst (Gemini)</td>
+    <td><code>bup_plus_scores.json</code></td>
+    <td>T1 watchlist gate</td>
+  </tr>
+  <tr>
+    <td>T1</td>
+    <td><code>intraday_score</code></td>
+    <td>Live price vs T2 entry zone, RVOL ratio (intraday/typical), premarket gap, sector ETF intraday RS, VIX intraday</td>
+    <td><code>intraday_setups.json</code></td>
+    <td>Trading / alerts</td>
+  </tr>
+  <tr>
+    <td>T0</td>
+    <td><code>event_promotion</code> (boolean + reason)</td>
+    <td>Fresh news hits, fresh EDGAR filings, halt/resume tape</td>
+    <td><code>promotions.json</code></td>
+    <td>T1 watchlist (additive)</td>
+  </tr>
+</table>
+
+<h3>Concrete cron schedule (raymond)</h3>
+
+<pre>
+# Event poll (news + EDGAR)
+*/5  9-17 * * 1-5   python pipeline.py --t0-poll                   # market hours
+0    8    * * 1-5   python pipeline.py --t0-poll --premarket       # 1h pre-open
+
+# Intraday — top 300 only
+*/15 9-16 * * 1-5   python pipeline.py --t1-intraday
+
+# Daily — top 1500 from T3 setup_universe
+30   17   * * 1-5   python pipeline.py --t2-daily                  # 5:30pm ET
+# (runs: tech_scan, FINRA SHO, insider Form 4, earnings refresh,
+#  macro_regime, news catalyst on top 200 by pre-news, BUP++)
+
+# Weekly — top 3500 from T4 structural_universe
+0    6    * * 6     python pipeline.py --t3-weekly                 # Sat 6am ET
+# (runs: float/SI from Finnhub, options chains, analyst data,
+#  cluster-buying analysis, FINRA SHO trend)
+
+# Monthly — full ~6000 universe
+0    2    1 * *     python pipeline.py --t4-monthly                # 1st of month
+# (runs: 13F + diffs, 10-Q/K fundamentals refresh, ownership %,
+#  cash runway, lock-up calendar)
+
+# Event-anchored re-runs (no cron — triggered by webhook or T0 detection)
+# - New 13F filing → re-run T4 on affected ticker
+# - New 10-Q       → re-run T4 fundamentals on affected ticker
+# - News hit       → T0 already covers; may promote into T1
+</pre>
+
+<h3>Why this is better than "scan everything nightly"</h3>
+
+<ul>
+  <li><strong>Slow data doesn't waste fast cycles.</strong> Float and 13F
+    don't change overnight; pulling them daily on 6000 tickers burns Finnhub
+    quota for no signal gain.</li>
+  <li><strong>Fast data isn't bottlenecked by slow scans.</strong> Intraday
+    RVOL on a 300-ticker watchlist runs in seconds. Forcing it through a
+    6000-ticker pass would add minutes of latency where it matters most.</li>
+  <li><strong>Sieving is justified at every step.</strong> A ticker excluded
+    from T1 because it failed T2's regime gate yesterday is not a candidate
+    today; the sieve isn't hiding signal, it's matching scan cadence to
+    decision cadence.</li>
+  <li><strong>Costs are bounded per tier.</strong> Each cron has a clear
+    budget — T1 ~3 min, T2 ~30 min, T3 ~3 hours, T4 ~6 hours, all running
+    on raymond on independent schedules.</li>
+  <li><strong>Event-driven promotion preserves serendipity.</strong> The T0
+    poll can promote any ticker into the watchlist regardless of tier
+    history — so a sleeper that wakes up on news isn't trapped by
+    yesterday's structural verdict.</li>
+</ul>
+
+<div class="callout rec">
+  <strong>Net result:</strong> the BUP++ score we already built becomes the
+  <strong>T2 daily score</strong>. We add a T3 weekly <code>setup_score</code>
+  that gates which 1500 names T2 even looks at, and a T1 15-min
+  <code>intraday_score</code> that gates which 300 names get live-monitored.
+  The pipeline that exists today is one tier of five — the most important
+  one for the swing-trading decision, but not the only one.
+</div>
+
+<!-- ========================================================== -->
+<h2 id="legend">Legend</h2>
+<p>
+  <span class="have">●</span> have it &nbsp;
+  <span class="partial">●</span> partial / could improve &nbsp;
+  <span class="miss">●</span> missing &nbsp; · &nbsp;
+  <span class="free">free</span> ·
+  <span class="cheap">&lt; $30/mo</span> ·
+  <span class="paid">paid tier</span> &nbsp; · &nbsp;
+  <strong>T0–T4</strong> = frequency tier (see §0.5)
+</p>
+
+<!-- ========================================================== -->
+<h2 id="price">1 · Price action &amp; technicals</h2>
+<p class="sub">What the chart is doing: trend, momentum, volatility, range position. <strong>Tier: T2 daily</strong> (bars + indicators); <strong>T1 intraday</strong> (live price, premarket).</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Current source</th><th>Recommended</th><th>Status</th></tr>
+  <tr><td>Daily OHLCV (1y)</td><td>Baseline for everything else</td><td>yfinance (batched)</td><td>yfinance</td><td><span class="have">have</span></td></tr>
+  <tr><td>RSI(14), ADX(14)</td><td>Momentum &amp; trend strength</td><td><code>tech_scan.py</code> local</td><td>—</td><td><span class="have">have</span></td></tr>
+  <tr><td>ATR(14), ATR%</td><td>Position-sizing &amp; stop placement</td><td><code>tech_scan.py</code> local</td><td>—</td><td><span class="have">have</span></td></tr>
+  <tr><td>SMA50, SMA200, above/below flags</td><td>Trend regime</td><td><code>tech_scan.py</code> local</td><td>—</td><td><span class="have">have</span></td></tr>
+  <tr><td>Bollinger width %, squeeze</td><td>Volatility contraction</td><td><code>tech_scan.py</code> local</td><td>—</td><td><span class="have">have</span></td></tr>
+  <tr><td>Range position 200d</td><td>Where in the year's range</td><td><code>tech_scan.py</code> local</td><td>—</td><td><span class="have">have</span></td></tr>
+  <tr><td>Regime label (9 classes)</td><td>One-glance setup type</td><td><code>tech_scan.py</code> local</td><td>—</td><td><span class="have">have</span></td></tr>
+  <tr><td>Gap %, gap fill statistics</td><td>Gap-and-go vs fade behavior</td><td>—</td><td>Derive from existing OHLC</td><td><span class="partial">easy add</span></td></tr>
+  <tr><td>Premarket / after-hours bars</td><td>Overnight reaction strength</td><td>—</td><td><strong>Alpaca</strong> (free IEX)</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Intraday minute bars</td><td>Entry timing, mid-day RVOL</td><td>—</td><td><strong>Alpaca</strong> (free IEX for liquid, SIP for microcaps)</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Real-time quotes / trades</td><td>Live execution</td><td>—</td><td><strong>Alpaca</strong> (when going live)</td><td><span class="miss">later</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="volume">2 · Volume signals</h2>
+<p class="sub">Volume is the single most under-instrumented dimension we have. See callout above. <strong>Tier: T2 daily</strong> (daily volume features); <strong>T1 intraday</strong> (RVOL, premarket); <strong>T3 weekly</strong> (float turnover, off-exchange short trend).</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Current source</th><th>Recommended</th><th>Status</th></tr>
+  <tr><td>vol_ratio_5_60</td><td>Stepped-up vs sleepy volume</td><td><code>tech_scan.py</code></td><td>—</td><td><span class="have">have</span></td></tr>
+  <tr><td>Dollar volume (20d avg)</td><td>Liquidity floor for sizing</td><td>—</td><td>Add to <code>tech_scan.py</code></td><td><span class="partial">trivial add</span></td></tr>
+  <tr><td>Float turnover ratio</td><td>Squeeze precursor</td><td>—</td><td>Float from Finnhub × volume</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>OBV slope</td><td>Volume-confirmed direction</td><td>—</td><td>Compute locally</td><td><span class="partial">trivial add</span></td></tr>
+  <tr><td>Up-vol / down-vol ratio (20d)</td><td>Accumulation vs distribution</td><td>—</td><td>Compute locally</td><td><span class="partial">trivial add</span></td></tr>
+  <tr><td>Intraday RVOL (hourly)</td><td>Live breakout detection</td><td>—</td><td>Alpaca minute bars</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Premarket volume</td><td>Catalyst-strength tell</td><td>—</td><td>Alpaca extended bars</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Block trade prints</td><td>Institutional footprint</td><td>—</td><td>Polygon trades or Alpaca SIP</td><td><span class="miss">missing</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="float">3 · Float, short interest, dilution risk</h2>
+<p class="sub">Causal for squeezes, and for the opposite — overhang from offerings. <strong>Tier: T3 weekly</strong> (float, SI — these barely change day-to-day); <strong>T2 daily</strong> (FINRA short volume); <strong>T0 event</strong> (S-1/S-3 filings).</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Current source</th><th>Recommended</th><th>Status</th></tr>
+  <tr><td>Free float, shares outstanding</td><td>Squeeze potential, liquidity</td><td>yfinance (sketchy for microcaps)</td><td><strong>Finnhub</strong> <span class="free">free</span></td><td><span class="partial">upgrade source</span></td></tr>
+  <tr><td>Short interest %</td><td>Crowding on the short side</td><td>yfinance (stale, biweekly FINRA)</td><td>Finnhub for free, <strong>ORTEX</strong> <span class="paid">$70/mo</span> for live</td><td><span class="partial">have stale</span></td></tr>
+  <tr><td>Days-to-cover</td><td>How long to unwind shorts</td><td>—</td><td>Derive: SI / avg daily vol</td><td><span class="partial">trivial add</span></td></tr>
+  <tr><td>Borrow rate / utilization</td><td>Live squeeze pressure</td><td>—</td><td>ORTEX, IBKR API <span class="paid">paid</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Recent dilution events (S-1, S-3, ATM)</td><td>Overhead supply</td><td>EDGAR (in news scan)</td><td>EDGAR direct</td><td><span class="have">have</span></td></tr>
+  <tr><td>Cash runway</td><td>Dilution probability</td><td>—</td><td>Derive from quarterly filings (cash / burn)</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Lock-up expiration dates</td><td>Insider supply unlock</td><td>—</td><td>Parse from S-1 prospectus or BiopharmaCatalyst</td><td><span class="miss">missing</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="insider">4 · Insider transactions</h2>
+<p class="sub">Form 4 filings — what executives and 10%-holders are doing with their own stock. <strong>Tier: T2 daily</strong> (new Form 4 hits, rolling 90d net buy %); <strong>T3 weekly</strong> (cluster-buy detection on 30d window).</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Current source</th><th>Status</th></tr>
+  <tr><td>Open-market buys/sells (codes P/S), 90d</td><td>Conviction signal</td><td>Finnhub <code>/stock/insider-transactions</code></td><td><span class="have">have</span> (<code>insider_signal.py</code>)</td></tr>
+  <tr><td>Net buy %, score 0–10</td><td>BUP++ component</td><td><code>insider_signal.py</code></td><td><span class="have">have</span></td></tr>
+  <tr><td>Cluster buying (3+ insiders, 30d)</td><td>Strongest insider signal</td><td>—</td><td><span class="partial">easy add</span> (already have raw data)</td></tr>
+  <tr><td>10b5-1 plan vs discretionary</td><td>Sell is preplanned (noise) vs decided (signal)</td><td>—</td><td><span class="partial">parse from Form 4 footnotes</span></td></tr>
+  <tr><td>Insider ownership %</td><td>Skin in the game baseline</td><td>yfinance / Finnhub</td><td><span class="partial">available, not used</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="inst">5 · Institutional ownership</h2>
+<p class="sub">13F (quarterly, 45-day lag) and 13D/G (real-time, &gt;5% holders) — who owns the stock. <strong>Tier: T4 monthly/quarterly</strong> (13F + diffs, ownership %); <strong>T0 event</strong> (13D/G hits when they file).</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Recommended source</th><th>Status</th></tr>
+  <tr><td>13F quarterly holdings</td><td>Smart-money positioning</td><td>EDGAR (free) or WhaleWisdom</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>13F changes (new, added, trimmed)</td><td>Direction of conviction</td><td>EDGAR diff between filings</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>13D / 13G filings</td><td>Activist or major holder events</td><td>EDGAR full-text (free)</td><td><span class="miss">missing</span> (would catch in 8-K scan but not specifically)</td></tr>
+  <tr><td>Institutional ownership %</td><td>Crowding gauge</td><td>yfinance / Finnhub</td><td><span class="partial">available, not used</span></td></tr>
+  <tr><td>Mutual fund flows by ticker</td><td>Passive vs active demand</td><td>SimFin, FMP <span class="cheap">$20/mo</span></td><td><span class="miss">missing</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="earnings">6 · Earnings &amp; analyst</h2>
+<p class="sub"><strong>Tier: T2 daily</strong> (earnings calendar refresh, surprises, news-driven upgrade/downgrade events); <strong>T3 weekly</strong> (analyst PT consensus &amp; revision trend); <strong>T0 event</strong> (live earnings releases).</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Current source</th><th>Status</th></tr>
+  <tr><td>Next earnings date</td><td>Event proximity</td><td>yfinance <code>earnings_dates</code></td><td><span class="have">have</span> (<code>earnings_proximity.py</code>)</td></tr>
+  <tr><td>4Q surprise %</td><td>Beat-rate momentum</td><td>yfinance <code>earnings_dates</code></td><td><span class="have">have</span></td></tr>
+  <tr><td>Analyst PT consensus &amp; revisions</td><td>Smart-money revision direction</td><td>Finnhub, Benzinga, Yahoo</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Analyst upgrades / downgrades (events)</td><td>Catalyst news</td><td><strong>Alpaca/Benzinga news</strong> (already feeds catalyst scorer)</td><td><span class="have">have</span> (in news stream)</td></tr>
+  <tr><td>Earnings whisper / pre-earnings drift</td><td>Expectation skew</td><td>Estimize <span class="paid">paid</span>, derive from price action</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Guidance changes</td><td>Direct catalyst</td><td>8-K filings + news</td><td><span class="have">have</span> (via filings + news)</td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="news">7 · News &amp; catalysts</h2>
+<p class="sub"><strong>Tier: T0 event</strong> (raw news + filings poll every 5 min); <strong>T2 daily</strong> (Gemini catalyst scoring on top 200 by pre-news BUP++); <strong>T3 weekly</strong> (PDUFA / clinicaltrials.gov calendar refresh).</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Current source</th><th>Status</th></tr>
+  <tr><td>Multi-ticker daily news feed</td><td>Catalyst surface</td><td><strong>Alpaca News (Benzinga)</strong></td><td><span class="have">have</span> (<code>alpaca_news.py</code>)</td></tr>
+  <tr><td>Gemini catalyst scoring</td><td>Strength + type per ticker</td><td>Gemini search grounding + scoring</td><td><span class="have">have</span> (<code>catalyst_scorer.py</code>)</td></tr>
+  <tr><td>Press releases (PR Newswire, BusinessWire)</td><td>Earlier raw catalyst</td><td>RSS feeds (free) or Benzinga (we already have)</td><td><span class="have">covered by Benzinga</span></td></tr>
+  <tr><td>Reuters / Bloomberg breaking</td><td>Tier-1 newsflow</td><td>Benzinga partially mirrors, otherwise expensive</td><td><span class="partial">partial</span></td></tr>
+  <tr><td>FDA Drug Approvals / Calendar (PDUFA)</td><td>Biotech catalyst dates</td><td>BiopharmaCatalyst scrape (free)</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Clinical trials feed (clinicaltrials.gov)</td><td>Biotech data readouts</td><td>API <span class="free">free</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Government contracts (USAspending)</td><td>Defense/gov-contractor catalysts</td><td>USAspending.gov API <span class="free">free</span></td><td><span class="miss">missing</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="filings">8 · SEC filings</h2>
+<p class="sub"><strong>Tier: T0 event</strong> (8-K, S-1/S-3, 13D/G — poll every 5 min); <strong>T4 monthly</strong> (10-Q/10-K XBRL parse, DEF 14A); <strong>T2 daily</strong> (Form 4 rollup into insider signal).</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Current source</th><th>Status</th></tr>
+  <tr><td>8-K (material events)</td><td>Mid-quarter catalysts</td><td>EDGAR (in <code>news_monitor.py</code>)</td><td><span class="have">have</span></td></tr>
+  <tr><td>S-1 / S-3 (offerings)</td><td>Dilution risk</td><td>EDGAR</td><td><span class="have">have</span></td></tr>
+  <tr><td>10-K / 10-Q (quarterly)</td><td>Fundamentals refresh</td><td>EDGAR XBRL</td><td><span class="partial">partial — not parsed</span></td></tr>
+  <tr><td>Form 4 (insider)</td><td>Insider transactions</td><td>Finnhub mirrors</td><td><span class="have">have</span></td></tr>
+  <tr><td>SC 13D / SC 13G (&gt;5% holders)</td><td>Activist or accumulator</td><td>EDGAR — add to form filter</td><td><span class="partial">easy add</span></td></tr>
+  <tr><td>DEF 14A (proxy)</td><td>Comp, M&amp;A votes</td><td>EDGAR</td><td><span class="miss">low priority</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="options">9 · Options flow</h2>
+<p class="sub">Where the smart (and dumb) money is positioning short-term. <strong>Tier: T3 weekly</strong> (full chain pull on T3 universe — P/C, IV rank, OI snapshot); <strong>T2 daily</strong> (OI Δ on the daily watchlist); <strong>T1 intraday</strong> only if subscribed to a paid UOA feed.</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Recommended source</th><th>Status</th></tr>
+  <tr><td>Unusual options activity (UOA)</td><td>Catalyst front-running</td><td>Cheddar Flow <span class="paid">$60–$120/mo</span>, Unusual Whales <span class="paid">$50/mo</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Put/call ratio</td><td>Crowd positioning</td><td>CBOE daily <span class="free">free</span>, yfinance options chain</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Open interest changes</td><td>New positioning vs roll</td><td>yfinance options + day-over-day diff</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>IV / IV rank / IV percentile</td><td>Vol premium for premium-selling, or breakout pressure</td><td>yfinance options chain → derive</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Gamma exposure (GEX)</td><td>Dealer hedging pressure / pin risk</td><td>SpotGamma <span class="paid">$99/mo</span>, derive from OI</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Skew</td><td>Crash protection demand</td><td>Derive from options chain</td><td><span class="miss">missing</span></td></tr>
+</table>
+<p class="sub">
+  <strong>Verdict:</strong> Options flow is the highest-information dimension
+  we don't touch. yfinance options chains are free and good enough to derive
+  P/C, IV rank, and OI changes — the limitation is that we'd need a
+  per-ticker option chain pull, which doesn't batch well. A scoped
+  daily pull on the top 100 BUP++ tickers would be cheap.
+</p>
+
+<!-- ========================================================== -->
+<h2 id="darkpool">10 · Dark pool / off-exchange</h2>
+<p class="sub"><strong>Tier: T2 daily</strong> (FINRA Reg SHO daily file — contains every ticker, one CSV); <strong>T3 weekly</strong> (rolling short-volume trend &amp; lit-vs-dark ratio).</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Recommended source</th><th>Status</th></tr>
+  <tr><td>Off-exchange short volume (daily)</td><td>Hidden short pressure</td><td><strong>FINRA Reg SHO daily files</strong> <span class="free">free</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Dark pool prints (DPI)</td><td>Institutional accumulation off-tape</td><td>SqueezeMetrics <span class="paid">$75/mo</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Lit-vs-dark ratio</td><td>Where the volume actually trades</td><td>Derive from FINRA + total volume</td><td><span class="miss">missing</span></td></tr>
+</table>
+<p class="sub">
+  FINRA's daily Reg SHO files are <em>free</em>, plain-text, one URL per day, no key.
+  Single biggest cheap upgrade — short volume by ticker, daily,
+  going back years.
+</p>
+
+<!-- ========================================================== -->
+<h2 id="fundamentals">11 · Fundamentals</h2>
+<p class="sub"><strong>Tier: T4 monthly</strong> (10-Q/10-K refresh, cash runway, margins, debt); <strong>T3 weekly</strong> (cap, sector, industry classification from precondition scan).</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Current source</th><th>Status</th></tr>
+  <tr><td>Market cap, sector, industry</td><td>Baseline categorization</td><td>yfinance (precondition scan)</td><td><span class="have">have</span></td></tr>
+  <tr><td>Revenue growth, margins, ROE</td><td>Quality screen</td><td>yfinance fundamentals</td><td><span class="have">have</span></td></tr>
+  <tr><td>Debt / cash / runway</td><td>Solvency &amp; dilution risk</td><td>yfinance balance sheet</td><td><span class="partial">partial</span></td></tr>
+  <tr><td>FCF yield, EV/EBITDA</td><td>Value screen</td><td>yfinance</td><td><span class="partial">partial — precondition scan has "deep value" attr</span></td></tr>
+  <tr><td>XBRL line items (clean)</td><td>Microcap-grade fundamentals</td><td>EDGAR XBRL or FMP <span class="cheap">$20/mo</span></td><td><span class="miss">low priority while yfinance works</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="sentiment">12 · Sentiment &amp; social</h2>
+<p class="sub"><strong>Tier: T2 daily</strong> (Reddit/StockTwits mention deltas, Google Trends weekly delta); <strong>T1 intraday</strong> only on top watchlist if added later. Optional dimension — implement T2 first.</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Recommended source</th><th>Status</th></tr>
+  <tr><td>r/wallstreetbets mention spikes</td><td>Retail attention surge</td><td>Reddit API <span class="free">free</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>StockTwits message volume / sentiment</td><td>Real-time retail sentiment</td><td>StockTwits API <span class="free">free tier</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Google Trends spikes</td><td>Mainstream attention</td><td>pytrends <span class="free">free</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>X / Twitter mentions</td><td>Real-time chatter</td><td>X API <span class="paid">$200/mo</span> — skip</td><td><span class="miss">skip</span></td></tr>
+  <tr><td>News sentiment score (per article)</td><td>Bull/bear lean per story</td><td>Already implicit in Gemini scoring</td><td><span class="have">have</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="calendar">13 · Event calendars</h2>
+<p class="sub"><strong>Tier: T3 weekly</strong> (PDUFA, FOMC, lock-up calendars, ex-div, IPO calendar refresh); <strong>T2 daily</strong> (earnings within 0–2 days, economic releases for today).</p>
+<table>
+  <tr><th>Attribute</th><th>Source</th><th>Status</th></tr>
+  <tr><td>Earnings calendar</td><td>yfinance (in earnings_proximity)</td><td><span class="have">have</span></td></tr>
+  <tr><td>FDA PDUFA dates</td><td>BiopharmaCatalyst <span class="free">free scrape</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>FOMC meetings &amp; statements</td><td>federalreserve.gov calendar <span class="free">free</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Economic releases (NFP, CPI, PPI)</td><td>FRED, BLS calendar</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Ex-div, splits, IPO calendar</td><td>Nasdaq, yfinance</td><td><span class="partial">partial</span></td></tr>
+  <tr><td>Lock-up expirations</td><td>Parse S-1, MarketBeat <span class="free">scrape</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Conference / investor day announcements</td><td>8-K + Benzinga news</td><td><span class="have">covered indirectly</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="sector">14 · Sector / peer rotation</h2>
+<p class="sub"><strong>Tier: T2 daily</strong> (sector ETF close-of-day RS, sector news sentiment aggregate); <strong>T1 intraday</strong> (sector ETF live tape, intraday RS for watchlist).</p>
+<table>
+  <tr><th>Attribute</th><th>What it tells us</th><th>Recommended source</th><th>Status</th></tr>
+  <tr><td>Sector ETF relative strength (SPY-rel)</td><td>Wind at our back</td><td>yfinance ETF bars (XLK, XLE, etc.)</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Industry-group relative strength (IBD-style)</td><td>Group leadership rotation</td><td>Derive from precondition scan</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Peer correlation cluster</td><td>Diversification check</td><td>Compute locally</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Sector news sentiment aggregate</td><td>Group-level catalyst</td><td>Aggregate Alpaca News by sector</td><td><span class="partial">easy add</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="macro">15 · Macro regime</h2>
+<p class="sub">
+  Wired as <code>macro_multiplier()</code> in <code>bup_plus.py</code>,
+  currently returning 1.0 (neutral). All inputs below are free from FRED
+  + yfinance — a small <code>macro_regime.py</code> module would close this.
+  <strong>Tier: T2 daily</strong> (close-of-day macro snapshot, drives the BUP++ multiplier); <strong>T1 intraday</strong> (VIX + SPY tape for live risk-on/off); <strong>T4 monthly</strong> (FOMC dots, NFP/CPI calendar).
+</p>
+<table>
+  <tr><th>Signal</th><th>What it tells us</th><th>Source</th><th>Status</th></tr>
+  <tr><td>10y yield, 2y yield, 2s10s spread</td><td>Rate &amp; growth regime</td><td>FRED <span class="free">free</span></td><td><span class="miss">missing</span></td></tr>
+  <tr><td>VIX level &amp; term structure (VIX/VIX3M)</td><td>Risk-on/risk-off</td><td>yfinance (^VIX, ^VIX3M)</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>DXY (dollar index)</td><td>Risk-asset headwind</td><td>yfinance (DX-Y.NYB)</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>HY / IG credit spreads</td><td>Risk appetite</td><td>FRED (BAMLH0A0HYM2)</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>SPY trend (above/below 50d)</td><td>Beta tailwind/headwind</td><td>yfinance</td><td><span class="miss">missing</span></td></tr>
+  <tr><td>Fed funds, NFP, CPI</td><td>Macro print regime</td><td>FRED</td><td><span class="miss">missing</span></td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="priorities">16 · Recommended build order</h2>
+
+<p class="sub">
+  Build phases below are about <em>order of implementation</em>, not data
+  freshness. Each row also lists the <strong>frequency tier (T0–T4)</strong>
+  it lives in once built — see <a href="#frequency">§0.5</a>.
+</p>
+
+<h3>Phase A — close the existing T2 daily tier (build first)</h3>
+<table>
+  <tr><th>Add</th><th>Freq tier</th><th>Cost</th><th>Why</th></tr>
+  <tr><td><span class="pill priority-1">A</span> Dollar volume floor + float turnover + OBV / up-down vol</td><td>T2 daily</td><td><span class="free">free</span> (local from existing bars)</td><td>Largest set of cheap, high-information additions to BUP++.</td></tr>
+  <tr><td><span class="pill priority-1">A</span> Macro regime multiplier (FRED + yfinance)</td><td>T2 daily</td><td><span class="free">free</span></td><td>Hook already wired; closes <code>macro_multiplier()</code>.</td></tr>
+  <tr><td><span class="pill priority-1">A</span> FINRA Reg SHO daily short volume</td><td>T2 daily</td><td><span class="free">free</span></td><td>One CSV/day, all tickers. Off-exchange short pressure.</td></tr>
+  <tr><td><span class="pill priority-1">A</span> Cluster-buying flag from existing Finnhub Form 4 data</td><td>T2 daily → T3 rollup</td><td><span class="free">free</span></td><td>Already pulling Form 4s. 3+ insiders in 30d = single strongest insider signal.</td></tr>
+  <tr><td><span class="pill priority-1">A</span> Sector ETF relative strength</td><td>T2 daily</td><td><span class="free">free</span></td><td>11 SPDR pulls. Tailwind/headwind for every name.</td></tr>
+</table>
+
+<h3>Phase B — stand up the T3 weekly tier</h3>
+<table>
+  <tr><th>Add</th><th>Freq tier</th><th>Cost</th><th>Why</th></tr>
+  <tr><td><span class="pill priority-2">B</span> Float / SI upgrade from Finnhub (replace yfinance)</td><td>T3 weekly</td><td><span class="free">free</span></td><td>Weekly cadence is honest — float barely changes. yfinance float unreliable for microcaps.</td></tr>
+  <tr><td><span class="pill priority-2">B</span> Options chains on T3 universe (~1500): P/C, IV rank, OI</td><td>T3 weekly + T2 daily OI Δ</td><td><span class="free">free</span></td><td>Slow per-ticker; weekly snapshot + daily OI Δ on watchlist is the right cadence.</td></tr>
+  <tr><td><span class="pill priority-2">B</span> Biotech PDUFA + clinicaltrials.gov calendar</td><td>T3 weekly</td><td><span class="free">free</span></td><td>Refreshes infrequently anyway; biotech-subset catalyst signal.</td></tr>
+  <tr><td><span class="pill priority-2">B</span> Analyst consensus PT + revision trend</td><td>T3 weekly</td><td><span class="free">free</span> (Finnhub)</td><td>Weekly enough — analysts don't move daily.</td></tr>
+</table>
+
+<h3>Phase C — stand up the T1 intraday tier &amp; T0 event poll</h3>
+<table>
+  <tr><th>Add</th><th>Freq tier</th><th>Cost</th><th>Why</th></tr>
+  <tr><td><span class="pill priority-2">C</span> Alpaca premarket / intraday RVOL on T2 watchlist (~300)</td><td>T1 intraday</td><td><span class="free">free</span> IEX</td><td>Catches gap-and-go before close-of-day scan. Scoped to watchlist = cheap.</td></tr>
+  <tr><td><span class="pill priority-2">C</span> SC 13D/13G EDGAR poll</td><td>T0 event</td><td><span class="free">free</span></td><td>Real-time activist / accumulator detection. Triggers T1 promotion.</td></tr>
+  <tr><td><span class="pill priority-2">C</span> Halt / resume tape from Nasdaq trader feed</td><td>T0 event</td><td><span class="free">free</span></td><td>Best single intraday catalyst signal.</td></tr>
+</table>
+
+<h3>Phase D — stand up the T4 monthly tier</h3>
+<table>
+  <tr><th>Add</th><th>Freq tier</th><th>Cost</th><th>Why</th></tr>
+  <tr><td><span class="pill priority-2">D</span> 13F holdings + diffs (smart-money positioning)</td><td>T4 quarterly</td><td><span class="free">free</span> (EDGAR)</td><td>Quarterly anyway; one monthly bulk parse covers it.</td></tr>
+  <tr><td><span class="pill priority-2">D</span> 10-Q / 10-K XBRL refresh (cash, debt, runway)</td><td>T4 monthly + event-anchored</td><td><span class="free">free</span> (EDGAR XBRL)</td><td>Filings ~quarterly; gives the structural_score real teeth.</td></tr>
+  <tr><td><span class="pill priority-2">D</span> Lock-up expiration calendar (parse from S-1s)</td><td>T4 monthly</td><td><span class="free">free</span></td><td>Insider supply unlock dates. Catalyst calendar input.</td></tr>
+</table>
+
+<h3>Phase E — paid sources, decide only after A–D are running</h3>
+<table>
+  <tr><th>Add</th><th>Freq tier</th><th>Cost</th><th>Decision</th></tr>
+  <tr><td><span class="pill priority-3">E</span> Alpaca SIP feed (full consolidated tape)</td><td>T1 intraday</td><td><span class="paid">$99/mo</span></td><td>Skip until intraday execution is on the table; IEX free tier fine for T1 RVOL on liquid names.</td></tr>
+  <tr><td><span class="pill priority-3">E</span> ORTEX (live SI, borrow rate, utilization)</td><td>T2 daily</td><td><span class="paid">$70/mo</span></td><td>Worth it once squeeze setups are 10%+ of trades.</td></tr>
+  <tr><td><span class="pill priority-3">E</span> Unusual Whales / Cheddar Flow (UOA)</td><td>T1 intraday</td><td><span class="paid">$50–$120/mo</span></td><td>yfinance-derived P/C + IV rank may capture ~70% for free first.</td></tr>
+  <tr><td><span class="pill priority-3">E</span> SpotGamma (GEX)</td><td>T2 daily</td><td><span class="paid">$99/mo</span></td><td>Skip — derivable approximately from chain.</td></tr>
+  <tr><td><span class="pill priority-3">E</span> Polygon (bars + fundamentals + 13F bundle)</td><td>multi-tier</td><td><span class="paid">$29–$199/mo</span></td><td>Skip — yfinance + Alpaca + EDGAR covers it.</td></tr>
+  <tr><td><span class="pill priority-3">E</span> X / Twitter API</td><td>T0 event</td><td><span class="paid">$200/mo</span></td><td>Skip — Reddit + StockTwits free is the better retail-attention proxy.</td></tr>
+</table>
+
+<h3>What's good as-is</h3>
+<ul>
+  <li>Daily bar fetch via yfinance is the right call — Alpaca free tier wouldn't be better, paid SIP isn't justified yet.</li>
+  <li>Alpaca News (Benzinga) is the right news source — no need to add a separate news vendor.</li>
+  <li>Finnhub for insider data is solid; we use it for what it's best at.</li>
+  <li>EDGAR direct pull for filings is the right move — beats all third-party wrappers.</li>
+  <li>Gemini catalyst scoring is in the right place in the pipeline — gated by sieve so we only spend on the top 200.</li>
+</ul>
+
+<h3>What's missing the most</h3>
+<ol>
+  <li><strong>Macro context.</strong> We're scoring single names in a vacuum. A 0.7×–1.3× multiplier driven by SPY trend + VIX + credit spreads + 2s10s would change the BUP++ top-of-list meaningfully.</li>
+  <li><strong>Richer volume features.</strong> One ratio (5d/55d) is the floor, not the ceiling. Dollar volume, float turnover, up/down ratio, OBV — all free, all from existing data.</li>
+  <li><strong>Options-derived signals.</strong> No P/C, no IV rank, no OI change. Single biggest under-instrumented dimension.</li>
+  <li><strong>Macro &amp; sector tailwind.</strong> No relative-strength check — we'd take a P2 setup in a sector that's down 8% on the week the same as one in the leading sector.</li>
+  <li><strong>FINRA short volume.</strong> Free, daily, off-exchange. No reason not to ingest.</li>
+</ol>
+
+<p class="sub" style="margin-top:30px">
+  All paths above resolve to raymond, not local. New modules under
+  <code>research/</code>, outputs under <code>research_output/</code>,
+  callable via flags on <code>pipeline.py</code>, runnable from the GHA
+  workflows that already drive raymond's nightly scan.
+</p>
+
+</main>
+</body>
+</html>
