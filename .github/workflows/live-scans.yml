@@ -83,6 +83,7 @@ jobs:
             echo "no changes"
             exit 0
           fi
+          git commit -m "[live-scan] ${{ steps.pick.outputs.scan }} $(date -u +%FT%TZ)"
           # rebase-and-push handles concurrent runs
           for i in 1 2 3; do
             git pull --rebase --autostash origin main || true
