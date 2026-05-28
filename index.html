@@ -231,14 +231,14 @@
   /* ── Scan strip (per-scan health rail) ──────────── */
   #scan-strip {
     display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-columns: repeat(10, minmax(0, 1fr));
     gap: 6px;
     padding: 8px 16px;
     border-bottom: 1px solid var(--border);
     background: var(--panel);
   }
-  @media (max-width: 1100px) {
-    #scan-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 1280px) {
+    #scan-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   }
   .scan-tile {
     position: relative;
@@ -372,6 +372,8 @@ const SCAN_REGISTRY = [
   { id: "tech_slice",        cron: "7-59/15 * * * *",      label: "every 15 min (+7)",       stale_min: 30 },
   { id: "insider_cluster",   cron: "20 */3 * * *",         label: "every 3 hr (:20)",        stale_min: 240 },
   { id: "material_8k",       cron: "5 */2 * * *",          label: "every 2 hr (:05)",        stale_min: 180 },
+  { id: "sc_13dg",           cron: "35 * * * *",           label: "hourly (:35)",            stale_min: 120 },
+  { id: "halt_tape",         cron: "*/2 14-20 * * 1-5",    label: "2 min, mkt hrs UTC",      stale_min: 15 },
   { id: "options_unusual",   cron: "*/30 14-20 * * 1-5",   label: "30 min, mkt hrs UTC",     stale_min: 120 },
   { id: "reg_sho",           cron: "30 12 * * *",          label: "daily 12:30 UTC",         stale_min: 1500 },
   { id: "fundamentals_snap", cron: "15 13 * * *",          label: "daily 13:15 UTC",         stale_min: 1500 },

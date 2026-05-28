@@ -192,6 +192,28 @@ def market_hours_every_30min() -> Callable[[datetime], datetime]:
     return f
 
 
+def market_hours_every_n_min(n: int) -> Callable[[datetime], datetime]:
+    """Every n minutes during 14:00–20:30 UTC, Mon–Fri.
+
+    Like market_hours_every_30min but with an arbitrary cadence. Used
+    for the halt-tape scan which polls every 2 min.
+    """
+    def f(after: datetime) -> datetime:
+        a = after
+        for _ in range(8):
+            day = a.replace(hour=0, minute=0, second=0, microsecond=0)
+            if day.weekday() < 5:
+                # generate slots at HH:00 + every n min through 20:30
+                for total_min in range(14 * 60, 20 * 60 + 31, n):
+                    h, m = divmod(total_min, 60)
+                    cand = day.replace(hour=h, minute=m)
+                    if cand > after:
+                        return cand
+            a = day + timedelta(days=1)
+        raise RuntimeError("unreachable")
+    return f
+
+
 # ── scan registry ──────────────────────────────────────────────────────
 @dataclass
 class Scan:
@@ -214,6 +236,8 @@ SCHEDULES: list[Scan] = [
     Scan("insider_cluster",   "research.scans.insider_cluster",   every_3h_at_minute(20),                    "EDGAR Form 4 cluster"),
     Scan("options_unusual",   "research.scans.options_unusual",   market_hours_every_30min(),                "top-watchlist options"),
     Scan("material_8k",       "research.scans.material_8k",       every_2h_at_minute(5),                     "EDGAR 8-K material events"),
+    Scan("sc_13dg",           "research.scans.sc_13dg",           every_n_minutes(60, offset=35),            "EDGAR SC 13D/G poll"),
+    Scan("halt_tape",         "research.scans.halt_tape",         market_hours_every_n_min(2),               "NASDAQ trading halts"),
     Scan("fundamentals_snap", "research.scans.fundamentals_snap", daily_at(13, 15),                          "Finnhub fundamentals snapshot"),
     Scan("macro_econ",        "research.scans.macro_econ",        daily_at_multi([(13, 20), (17, 20), (22, 20)]), "FRED macro series"),
 ]
