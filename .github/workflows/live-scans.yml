@@ -87,28 +87,35 @@ jobs:
             esac
           fi
 
-      - name: Run scan
+      - name: Run scan + commit (retry-on-race)
         env:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
           ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
-        run: python scan_runner.py "${{ steps.pick.outputs.scan }}"
-
-      - name: Commit live data
         run: |
           git config user.name  "raymond-bot"
           git config user.email "raymond-bot@users.noreply.github.com"
-          git add data/live/*.json
-          if git diff --staged --quiet; then
-            echo "no changes"
-            exit 0
-          fi
-          git commit -m "[live-scan] ${{ steps.pick.outputs.scan }} $(date -u +%FT%TZ)"
-          # rebase-and-push handles concurrent runs
-          for i in 1 2 3; do
-            git pull --rebase --autostash origin main || true
-            if git push origin main; then exit 0; fi
-            sleep 5
+          SCAN="${{ steps.pick.outputs.scan }}"
+          for i in 1 2 3 4; do
+            echo "::group::attempt $i for $SCAN"
+            git fetch origin main --quiet
+            git reset --hard origin/main --quiet
+            python scan_runner.py "$SCAN"
+            git add data/live/*.json
+            if git diff --staged --quiet; then
+              echo "no changes — done"
+              echo "::endgroup::"
+              exit 0
+            fi
+            git commit -m "[live-scan] $SCAN $(date -u +%FT%TZ)" --quiet
+            if git push origin main 2>&1 | tee /tmp/push.log; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "push race — will re-run scan against latest origin/main"
+            echo "::endgroup::"
+            sleep $((RANDOM % 5 + 2))
           done
+          echo "::error::gave up after 4 attempts"
           exit 1
