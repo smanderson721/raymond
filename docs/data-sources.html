@@ -206,12 +206,14 @@
   <tr>
     <th style="width:140px">Scan</th>
     <th style="width:90px">Cadence</th>
+    <th style="width:170px">Universe / per run</th>
     <th>Source</th>
     <th>What it produces &amp; how it scores</th>
   </tr>
   <tr>
     <td><strong>Macro Regime</strong><br><code>macro_regime</code></td>
     <td>every 15 min</td>
+    <td><strong>18 symbols</strong>, all every run<br><span class="muted">hard-coded basket (8 indices/FX + 11 SPDR sectors)</span></td>
     <td>yfinance (SPY/QQQ/IWM/VIX/^TNX/^IRX/DXY + 11 SPDR sectors)</td>
     <td>Classifies the tape into <span class="pill">risk_off</span> (×0.7),
       <span class="pill">defensive</span> (×0.85), <span class="pill">neutral</span> (×1.0),
@@ -223,6 +225,7 @@
   <tr>
     <td><strong>Technical</strong><br><code>tech_slice</code></td>
     <td>every 15 min (+7)</td>
+    <td><strong>400 / run</strong> out of ~6,000<br><span class="muted">rotating slice (cursor in <code>_slice_cursor.json</code>); full sweep in ~15 runs (~4 hrs)</span></td>
     <td>yfinance daily bars (6mo)</td>
     <td>Rolls through the <strong>~6,000-ticker precondition universe</strong>
       in <strong>slices of 400</strong> (cursor at <code>_slice_cursor.json</code>),
@@ -234,6 +237,7 @@
   <tr>
     <td><strong>Insider Buying</strong><br><code>insider_cluster</code></td>
     <td>every 3 hr (:20)</td>
+    <td><strong>~varies/run</strong> (last 5 business days of EDGAR Form 4s)<br><span class="muted">capped at 600 XML classifications per run (<code>MAX_CLASSIFY_TOTAL</code>)</span></td>
     <td>EDGAR daily form index + Form 4 XML</td>
     <td>Pulls every Form 4 over the last 4 business days, groups by
       issuer, and flags <strong>3+ buys / 3+ sells</strong> at one
@@ -251,6 +255,7 @@
   <tr>
     <td><strong>8-K Material</strong><br><code>material_8k</code></td>
     <td>every 2 hr (:05)</td>
+    <td><strong>~varies/run</strong> (last 3 business days of 8-Ks)<br><span class="muted">all filings processed, no cap</span></td>
     <td>EDGAR daily form index</td>
     <td>Sweeps recently-filed 8-Ks, classifies by item number (1.01
       material agreement, 2.02 results of ops, 5.02 director/officer
@@ -260,6 +265,7 @@
   <tr>
     <td><strong>Activist Stakes</strong><br><code>sc_13dg</code></td>
     <td>hourly (:35)</td>
+    <td><strong>~varies/run</strong> (last 2 business days of SC 13D/G)<br><span class="muted">all filings processed, no cap</span></td>
     <td>EDGAR SC 13D / SC 13G full submissions</td>
     <td>Detects new &gt;5% beneficial-ownership filings. 13D = activist
       intent (higher weight); 13G = passive accumulator. Surfaces the
@@ -268,6 +274,7 @@
   <tr>
     <td><strong>Halts &amp; Resumes</strong><br><code>halt_tape</code></td>
     <td>every 2 min, mkt hrs</td>
+    <td><strong>all US equities</strong> (live feed)<br><span class="muted">deduped by symbol; capped at 200 awards/run (<code>MAX_AWARDS_PER_RUN</code>)</span></td>
     <td>NASDAQ trader halts RSS</td>
     <td>Polls <code>nasdaqtrader.com/rss.aspx?feed=tradehalts</code>,
       diffs against the previous snapshot, and awards <strong>+3 on a
@@ -279,6 +286,7 @@
   <tr>
     <td><strong>Live RVOL</strong><br><code>rvol_stream</code></td>
     <td>always-on (daemon)</td>
+    <td><strong>top-25 watchlist</strong>, continuous<br><span class="muted">re-subscribes diff every 60 s; not a scheduled scan — a persistent websocket</span></td>
     <td>Alpaca IEX websocket <code>wss://stream.data.alpaca.markets/v2/iex</code></td>
     <td>Subscribes to per-minute bars for the <strong>top-25 watchlist
       tickers</strong> (refreshed every 60s from <code>watchlist.json</code>).
@@ -292,6 +300,7 @@
   <tr>
     <td><strong>Unusual Options</strong><br><code>options_unusual</code></td>
     <td>every 30 min, mkt hrs</td>
+    <td><strong>top-60 watchlist</strong> per run<br><span class="muted">yfinance ~2 s/ticker</span></td>
     <td>yfinance option chains on watchlist</td>
     <td>Pulls option chains for the watchlist, computes call/put volume
       ratio, OI change vs yesterday, near-money flow concentration.
@@ -300,6 +309,7 @@
   <tr>
     <td><strong>Short Squeeze List</strong><br><code>reg_sho</code></td>
     <td>daily 12:30 UTC</td>
+    <td><strong>full FINRA file</strong> (varies daily by trading volume; intersected with the ~6,000 scanned universe)<br><span class="muted">walks back 6 days if today's file is missing</span></td>
     <td>FINRA Reg SHO threshold CSV</td>
     <td>Pulls the daily Reg SHO threshold list (tickers with 5+
       consecutive days of failures-to-deliver ≥0.5% of shares
@@ -308,6 +318,7 @@
   <tr>
     <td><strong>Fundamentals</strong><br><code>fundamentals_snap</code></td>
     <td>daily 13:15 UTC</td>
+    <td><strong>top-120 watchlist</strong> (<code>SCAN_TOP_N</code>)<br><span class="muted">Finnhub rate-limited to 55 req/min</span></td>
     <td>yfinance bulk fundamentals</td>
     <td>Nightly snapshot of float, short interest %, days-to-cover,
       insider %, institutional %, market cap, sector. Powers the
@@ -316,6 +327,7 @@
   <tr>
     <td><strong>Earnings (XBRL)</strong><br><code>xbrl_facts</code></td>
     <td>daily 14:00 UTC</td>
+    <td><strong>~varies/run</strong> (issuers that filed 10-Q/10-K in the last 2 business days)<br><span class="muted">capped at 200 companyfacts fetches (<code>MAX_COMPANYFACTS_PER_RUN</code>); first live run saw 38</span></td>
     <td>EDGAR XBRL companyfacts API <code>data.sec.gov</code></td>
     <td>For every fresh 10-Q / 10-K seen in the last 2 business days,
       pulls the issuer's full XBRL <code>companyfacts</code> JSON and
@@ -337,12 +349,53 @@
   <tr>
     <td><strong>Macro Econ</strong><br><code>macro_econ</code></td>
     <td>3× daily UTC</td>
+    <td><strong>9 FRED series</strong>, all every run<br><span class="muted">DFF, DGS10, DGS2, DTWEXBGS, VIXCLS, CPIAUCSL, UNRATE, PAYEMS, GDPC1</span></td>
     <td>FRED API</td>
     <td>Pulls macro series (CPI, PCE, NFP, unemployment, ISM, fed funds
       rate, yield-curve points). Surfaces fresh prints as info events;
       feeds the macro_regime classifier with credit/curve context.</td>
   </tr>
 </table>
+
+<h3>Reading a scan tile</h3>
+<p>
+  Each tile in the scan strip shows three lines: the friendly title,
+  the cadence, and a counter line that looks like
+  <code>4m ago &middot; 83ev &middot; 72aw</code>. The breakdown:
+</p>
+<ul>
+  <li><strong><code>4m ago</code></strong> — wall-clock age of the
+    most recent completed run for this scan. Switches to
+    <code>now</code> for runs within the last minute, hours for older
+    runs, days if the scan hasn't fired (which usually means a stale
+    daemon — the tile will turn yellow).</li>
+  <li><strong><code>83ev</code></strong> — number of
+    <em>events</em> emitted during that run. An event is any line the
+    scan wrote to the live feed (one per ticker processed, one per
+    filing examined, etc.). High <code>ev</code> just means the scan
+    had a lot to look at, not that anything interesting happened. For
+    <code>tech_slice</code> this will be ~400 every run (one per
+    ticker in the slice); for <code>halt_tape</code> on a quiet day it
+    might be 0.</li>
+  <li><strong><code>72aw</code></strong> — number of
+    <em>awards</em> from that run. An award is when a ticker actually
+    scored points — i.e. it matched one of the scan's setup
+    conditions. <code>aw</code> ≤ <code>ev</code> always. The
+    award/event ratio tells you the scan's noise floor: 0/400 is
+    silence, 72/83 means almost everything triggered (which is what
+    we want to lower for <code>xbrl_facts</code>'s current 68% award
+    rate — see the improvements section below).</li>
+</ul>
+<p>
+  Tile colors: <strong>scan-specific accent</strong> = healthy, ran
+  recently. <strong>Pulsing dot in the corner</strong> = ran within
+  the last 90&nbsp;seconds. <strong>Yellow border</strong> = stale
+  (overdue based on the scan's expected cadence).
+  <strong>Red background</strong> = the last run errored —
+  hover the tile to see the exception message.
+  <strong>Muted/grey</strong> = pending, never run yet on this
+  process.
+</p>
 
 <h3>Dashboard (index.html)</h3>
 <ul>
@@ -357,7 +410,13 @@
   <li><strong>Scan feed</strong> (left column) streams every event as it
     arrives via SSE. Rows are color-coded by source scan (border + text
     tint), with notable / hit events overriding the per-scan tint in
-    accent yellow / hit pink. Hover a row to see the scan id.</li>
+    accent yellow / hit pink. Hover a row to see the scan id.
+    On page refresh the entire visible backlog is rendered instantly
+    and the view snaps to the latest event — no scroll-from-top
+    animation. Live events are then paced through a queue that aims
+    to spread them across a ~15-second drain window (min 120 ms, max
+    2.5 s between rows), so a 60-event burst from a finishing scan
+    feels like a steady ticker instead of a wall of text.</li>
   <li><strong>Top-10 watchlist</strong> (right column) is a time-decayed
     aggregate of recent awards. Each row shows rank, ticker, score, a
     24-point sparkline (green if trending up, red if down), a colored

@@ -424,7 +424,13 @@
 
 <script>
 const POLL_INTERVAL = 6000;
-const EVENT_REVEAL_RATE = 90;
+// Feed pacing: aim to drain the visible queue across roughly this many
+// milliseconds. When a scan dumps 60 events at once, we spread them out
+// instead of bursting. Clamped between MIN_GAP and MAX_GAP so we never
+// stall the feed completely (small queue) or lag behind (huge queue).
+const FEED_DRAIN_TARGET_MS = 15000;
+const FEED_MIN_GAP_MS = 120;
+const FEED_MAX_GAP_MS = 2500;
 const MAX_VISIBLE_EVENTS = 250;
 
 const URLS = {
@@ -520,9 +526,10 @@ function renderScanStrip(runs, streams) {
       if ((now - ts) < 90000) cls += " recent";
     }
     const baseTitle = `${meta.id} · ${meta.cron || meta.label}`;
+    const legend = "\nev = log lines emitted this run · aw = tickers that scored points (awards)";
     const title = last && last.error
-      ? `${baseTitle}\nerror: ${last.error}`
-      : (last && last.note) ? `${baseTitle}\n${last.note}` : `${baseTitle}\nno run yet`;
+      ? `${baseTitle}\nerror: ${last.error}${legend}`
+      : (last && last.note) ? `${baseTitle}\n${last.note}${legend}` : `${baseTitle}\nno run yet${legend}`;
     return `
       <div class="scan-tile ${cls} ${scanCls}" title="${title.replace(/"/g,'&quot;')}">
         <div class="name">${niceName}</div>
@@ -692,8 +699,11 @@ function pumpQueue() {
   renderEvent(queue.shift());
   document.getElementById("ev-count").textContent =
     `${document.getElementById("terminal").children.length} events visible`;
-  // accelerate when queue is large so we don't lag behind
-  const rate = queue.length > 100 ? 20 : queue.length > 30 ? 50 : EVENT_REVEAL_RATE;
+  // dynamic pacing: spread queued events evenly across FEED_DRAIN_TARGET_MS,
+  // clamped to [FEED_MIN_GAP_MS, FEED_MAX_GAP_MS]. Long quiet periods feel
+  // calmer (~2s/event when 1-2 queued); big bursts still drain quickly.
+  const ideal = queue.length > 0 ? FEED_DRAIN_TARGET_MS / queue.length : FEED_MAX_GAP_MS;
+  const rate = Math.min(FEED_MAX_GAP_MS, Math.max(FEED_MIN_GAP_MS, ideal));
   setTimeout(pumpQueue, rate);
 }
 
@@ -711,9 +721,20 @@ async function poll() {
       return true;
     });
     if (fresh.length > 0) {
-      const wasIdle = queue.length === 0;
-      queue.push(...fresh);
-      if (wasIdle) pumpQueue();
+      if (firstLoad) {
+        // initial page load: render the full backlog instantly and snap to
+        // the bottom, so a refresh lands the viewer on the latest event
+        // instead of forcing them to wait while events scroll in from the top.
+        const term = document.getElementById("terminal");
+        for (const ev of fresh) renderEvent(ev);
+        document.getElementById("ev-count").textContent =
+          `${term.children.length} events visible`;
+        term.scrollTop = term.scrollHeight;
+      } else {
+        const wasIdle = queue.length === 0;
+        queue.push(...fresh);
+        if (wasIdle) pumpQueue();
+      }
     }
     // bound the seen set
     if (seenEventKeys.size > 5000) seenEventKeys = new Set(Array.from(seenEventKeys).slice(-2500));
