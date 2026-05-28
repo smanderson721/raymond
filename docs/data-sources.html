@@ -138,6 +138,7 @@
 <main>
 
 <div class="toc">
+  <a href="#built"><strong>★ What's running right now (live daemon)</strong></a><br>
   <a href="#answers">0 · Quick answers (Alpaca vs yfinance, volume)</a><br>
   <a href="#frequency">0.5 · Frequency tiers &amp; cascading sieve</a><br>
   <a href="#legend">Legend</a><br>
@@ -156,11 +157,245 @@
   <a href="#calendar">13 · Event calendars</a><br>
   <a href="#sector">14 · Sector / peer rotation</a><br>
   <a href="#macro">15 · Macro regime</a><br>
-  <a href="#priorities">16 · Recommended priorities</a>
+  <a href="#priorities">16 · Recommended priorities</a><br>
+  <a href="#improvements">17 · Potential improvements (next)</a>
 </div>
 
 <!-- ========================================================== -->
-<h2 id="answers">0 · Quick answers</h2>
+<h2 id="built">★ What's running right now · Live Daemon</h2>
+
+<p>
+  This is what the dashboard you're looking at is reading from. Everything
+  below is <strong>built, deployed, and running 24/7</strong> on the alice
+  Oracle ARM VM (<code>ubuntu@129.153.22.182</code>). The rest of this
+  document (sections 0–16) is the original data-source catalog and
+  build-order plan; this section is the operational reality.
+</p>
+
+<h3>Architecture</h3>
+<p>
+  A single Python asyncio process — <code>live_daemon.py</code> — runs
+  forever under <code>systemd</code>. It owns three concurrent loops:
+</p>
+<ul>
+  <li><strong>Scheduler.</strong> 11 cron-style periodic scans, each
+    invoked by <code>loop.run_in_executor(None, mod.run)</code> on its
+    own cadence. Cron timing mirrors the dashboard's <code>SCAN_REGISTRY</code>.</li>
+  <li><strong>Daemons.</strong> Long-running coroutines that persist a
+    connection (currently just <code>rvol_stream</code>, the Alpaca IEX
+    websocket). Each gets a <code>stop_event: asyncio.Event</code> for
+    cooperative shutdown and is re-spawned on crash.</li>
+  <li><strong>HTTP server.</strong> Serves the dashboard at
+    <code>http://&lt;host&gt;:8420/</code>, exposes <code>/api/state</code>
+    (full bundle), <code>/api/stream</code> (Server-Sent Events: a
+    <code>scan</code> event on each scan completion plus <code>data</code>
+    events on any <code>data/live/*.json</code> mtime change), and
+    <code>POST /api/run/{scan}</code> for manual triggers.</li>
+</ul>
+<p>
+  Events from any scan land in a shared in-memory bus, get appended to
+  <code>data/live/events.json</code>, and stream out over SSE in real
+  time. Each scan also writes its own sidecar JSONs under <code>data/live/</code>
+  (watchlist, hits, status, plus scan-specific files). Restart latency
+  is ~100–300ms thanks to a shared <code>shutdown_event</code> that
+  kicks SSE clients out of their 15s keep-alive immediately.
+</p>
+
+<h3>The 12 scans</h3>
+<table>
+  <tr>
+    <th style="width:140px">Scan</th>
+    <th style="width:90px">Cadence</th>
+    <th>Source</th>
+    <th>What it produces &amp; how it scores</th>
+  </tr>
+  <tr>
+    <td><strong>Macro Regime</strong><br><code>macro_regime</code></td>
+    <td>every 15 min</td>
+    <td>yfinance (SPY/QQQ/IWM/VIX/^TNX/^IRX/DXY + 11 SPDR sectors)</td>
+    <td>Classifies the tape into <span class="pill">risk_off</span> (×0.7),
+      <span class="pill">defensive</span> (×0.85), <span class="pill">neutral</span> (×1.0),
+      <span class="pill">constructive</span> (×1.1), <span class="pill">risk_on</span> (×1.3)
+      based on SPY-above-SMA50, SPY 5-day return, and VIX level.
+      The multiplier scales every other scan's award. Drives the top-bar
+      label and the flash-banner on regime change.</td>
+  </tr>
+  <tr>
+    <td><strong>Technical</strong><br><code>tech_slice</code></td>
+    <td>every 15 min (+7)</td>
+    <td>yfinance daily bars (6mo)</td>
+    <td>Rolls through the <strong>~6,000-ticker precondition universe</strong>
+      in <strong>slices of 400</strong> (cursor at <code>_slice_cursor.json</code>),
+      covering the whole universe every ~15 runs (~4 hrs). Per slice: pulls
+      6 months of OHLCV, computes RSI / MACD / SMA-stack / 52-wk hi-lo /
+      volume ratios in pandas, awards on setup patterns (cup-with-handle,
+      breakout retest, oversold bounce, MACD cross, etc.).</td>
+  </tr>
+  <tr>
+    <td><strong>Insider Buying</strong><br><code>insider_cluster</code></td>
+    <td>every 3 hr (:20)</td>
+    <td>EDGAR daily form index + Form 4 XML</td>
+    <td>Pulls every Form 4 over the last 4 business days, groups by
+      issuer, and flags <strong>3+ buys / 3+ sells</strong> at one
+      issuer. Critically, fetches each filing's XML and classifies
+      transactions via <code>insider_xml.classify_form4()</code> —
+      <span class="have">P-code A-direction = buy</span>,
+      <span class="miss">S-code D-direction = sell</span>,
+      <span class="miss">M / F / V / A-grant = noise</span>. Without
+      this split, ~99% of Form 4 "clusters" are RSU vesting and option
+      grants. With it, the first live run on alice surfaced 0 buy /
+      3 sell clusters out of 9,361 filings (297 issuers were noise-only
+      and discarded). Awards: buys 7/12/16 pts at notable/hit/mega peak;
+      sells 2/4/6 pts.</td>
+  </tr>
+  <tr>
+    <td><strong>8-K Material</strong><br><code>material_8k</code></td>
+    <td>every 2 hr (:05)</td>
+    <td>EDGAR daily form index</td>
+    <td>Sweeps recently-filed 8-Ks, classifies by item number (1.01
+      material agreement, 2.02 results of ops, 5.02 director/officer
+      changes, 7.01 RegFD, 8.01 other events), awards based on the
+      item type and whether the ticker is already on the watchlist.</td>
+  </tr>
+  <tr>
+    <td><strong>Activist Stakes</strong><br><code>sc_13dg</code></td>
+    <td>hourly (:35)</td>
+    <td>EDGAR SC 13D / SC 13G full submissions</td>
+    <td>Detects new &gt;5% beneficial-ownership filings. 13D = activist
+      intent (higher weight); 13G = passive accumulator. Surfaces the
+      filer's name and ownership %.</td>
+  </tr>
+  <tr>
+    <td><strong>Halts &amp; Resumes</strong><br><code>halt_tape</code></td>
+    <td>every 2 min, mkt hrs</td>
+    <td>NASDAQ trader halts RSS</td>
+    <td>Polls <code>nasdaqtrader.com/rss.aspx?feed=tradehalts</code>,
+      diffs against the previous snapshot, and awards <strong>+3 on a
+      fresh halt</strong> and a separate event on resume. Distinguishes
+      LULD pauses, volatility halts, news halts. Best single intraday
+      catalyst signal we have. Currently the noisiest tile on the
+      dashboard for a reason — markets halt constantly.</td>
+  </tr>
+  <tr>
+    <td><strong>Live RVOL</strong><br><code>rvol_stream</code></td>
+    <td>always-on (daemon)</td>
+    <td>Alpaca IEX websocket <code>wss://stream.data.alpaca.markets/v2/iex</code></td>
+    <td>Subscribes to per-minute bars for the <strong>top-25 watchlist
+      tickers</strong> (refreshed every 60s from <code>watchlist.json</code>).
+      Maintains a 5-minute rolling volume window per ticker; computes
+      relative volume vs an <strong>IEX-adjusted baseline</strong>
+      (yfinance 20-day daily avg ÷ 78 buckets × 0.025 IEX-tape share).
+      Awards at RVOL ≥3× (notable) and ≥6× (hit). Reconnects with
+      exponential backoff. Status sidecar <code>_stream_status.json</code>
+      drives the daemon tile on the dashboard.</td>
+  </tr>
+  <tr>
+    <td><strong>Unusual Options</strong><br><code>options_unusual</code></td>
+    <td>every 30 min, mkt hrs</td>
+    <td>yfinance option chains on watchlist</td>
+    <td>Pulls option chains for the watchlist, computes call/put volume
+      ratio, OI change vs yesterday, near-money flow concentration.
+      Awards on extreme P/C skew or sudden OI build.</td>
+  </tr>
+  <tr>
+    <td><strong>Short Squeeze List</strong><br><code>reg_sho</code></td>
+    <td>daily 12:30 UTC</td>
+    <td>FINRA Reg SHO threshold CSV</td>
+    <td>Pulls the daily Reg SHO threshold list (tickers with 5+
+      consecutive days of failures-to-deliver ≥0.5% of shares
+      outstanding). Standard squeeze-setup ingredient.</td>
+  </tr>
+  <tr>
+    <td><strong>Fundamentals</strong><br><code>fundamentals_snap</code></td>
+    <td>daily 13:15 UTC</td>
+    <td>yfinance bulk fundamentals</td>
+    <td>Nightly snapshot of float, short interest %, days-to-cover,
+      insider %, institutional %, market cap, sector. Powers the
+      "structural score" half of BUP++ and provides watchlist context.</td>
+  </tr>
+  <tr>
+    <td><strong>Earnings (XBRL)</strong><br><code>xbrl_facts</code></td>
+    <td>daily 14:00 UTC</td>
+    <td>EDGAR XBRL companyfacts API <code>data.sec.gov</code></td>
+    <td>For every fresh 10-Q / 10-K seen in the last 2 business days,
+      pulls the issuer's full XBRL <code>companyfacts</code> JSON and
+      computes <strong>YoY revenue + net-income deltas</strong>.
+      Revenue YoY ≥+30% awards 10 pts ("revenue acceleration"), ≥+15%
+      awards 6 pts, ≤-20% awards 5 pts; NI loss→profit turn awards 3 pts.
+      Two non-trivial XBRL traps are handled: (a) post-ASC-606 most
+      filers moved from <code>Revenues</code> to
+      <code>RevenueFromContractWithCustomerExcludingAssessedTax</code>
+      but kept the legacy tag for old periods — we pick the tag whose
+      most-recent record has the freshest <code>filed</code> date; (b)
+      the XBRL <code>fy</code> field is the <em>filing's</em> fiscal year,
+      not the period's, so a FY2025 10-K stamps all comparative
+      prior-year facts with fy=2025 — we identify periods by the
+      <code>end</code> date and pair the prior by end-date ~365d earlier
+      with duration matching within 14d. Validated against AAPL / MSFT /
+      TSLA / GOOGL / AMZN.</td>
+  </tr>
+  <tr>
+    <td><strong>Macro Econ</strong><br><code>macro_econ</code></td>
+    <td>3× daily UTC</td>
+    <td>FRED API</td>
+    <td>Pulls macro series (CPI, PCE, NFP, unemployment, ISM, fed funds
+      rate, yield-curve points). Surfaces fresh prints as info events;
+      feeds the macro_regime classifier with credit/curve context.</td>
+  </tr>
+</table>
+
+<h3>Dashboard (index.html)</h3>
+<ul>
+  <li><strong>Top bar</strong> shows the live regime label (e.g.
+    “REGIME · CONSTRUCTIVE · ×1.1”) and a UTC clock. Color matches the
+    regime (green/yellow/muted/red).</li>
+  <li><strong>Scan strip</strong> — a 2×6 grid of health tiles. Each
+    tile shows the friendly title, cadence, last-run age, and events/
+    awards counts. Left border = scan-specific accent color when
+    healthy, yellow when stale, red on error. The pulsing dot in the
+    corner indicates a run within the last 90 seconds.</li>
+  <li><strong>Scan feed</strong> (left column) streams every event as it
+    arrives via SSE. Rows are color-coded by source scan (border + text
+    tint), with notable / hit events overriding the per-scan tint in
+    accent yellow / hit pink. Hover a row to see the scan id.</li>
+  <li><strong>Top-10 watchlist</strong> (right column) is a time-decayed
+    aggregate of recent awards. Each row shows rank, ticker, score, a
+    24-point sparkline (green if trending up, red if down), a colored
+    chip indicating the dominant source scan, and a short reason
+    fragment.</li>
+  <li><strong>Hit banner + chime</strong> — any award labeled "hit"
+    slides a banner across the top and plays a two-tone WebAudio chime
+    (gated on first user click per browser autoplay policy).</li>
+  <li><strong>Regime-change banner</strong> — when macro_regime flips,
+    a center-top banner shows the transition (e.g. "NEUTRAL →
+    CONSTRUCTIVE ×1.1") for 6 seconds and triggers the chime.</li>
+  <li><strong>Footer</strong> shows total scans run, total hits today,
+    current regime + VIX level, last scan name + age, daemon status,
+    and links to the repo and this page.</li>
+</ul>
+
+<h3>Operational notes</h3>
+<ul>
+  <li><strong>Box:</strong> alice (Oracle Cloud A1.Flex ARM,
+    <code>129.153.22.182</code>), free-tier.</li>
+  <li><strong>Systemd:</strong> <code>raymond.service</code>, auto-restart
+    with <code>Restart=always</code> / <code>RestartSec=5</code>.
+    EnvironmentFile loads <code>~/raymond/.env</code> (chmod 600;
+    holds Gemini, Finnhub, Alpaca, FRED keys; not in git).</li>
+  <li><strong>Code sync:</strong> alice cron pulls <code>git pull --ff-only</code>
+    every 30 min as user <code>ubuntu</code>. Push to <code>main</code>
+    + manual <code>sudo systemctl restart raymond</code> is the
+    deploy loop. <code>data/live/</code> is gitignored so the daemon
+    can write freely without race-conditioning the pull.</li>
+  <li><strong>SEC compliance:</strong> all EDGAR / data.sec.gov requests
+    send a UA header identifying the project and email; rate-limited to
+    ≤10 req/s with a polite 0.12s gap between fetches inside any scan.
+    insider_cluster has a per-run budget of 600 form fetches.</li>
+  <li><strong>What's been retired:</strong> the old
+    <code>.github/workflows/live-scans.yml</code> GHA crons are all
+    commented out (kept as <code>workflow_dispatch</code> fallbacks).
+    The daemon owns the cadence now.</li>
+</ul>
 
 <div class="callout q">
   <strong>Q1: Alpaca Market Data vs yfinance for technical setups?</strong>
@@ -668,39 +903,39 @@ T0 (event):      ANY ticker          → can <em>promote</em> into T1 on a
   it lives in once built — see <a href="#frequency">§0.5</a>.
 </p>
 
-<h3>Phase A — close the existing T2 daily tier (build first)</h3>
+<h3>Phase A — close the existing T2 daily tier (build first) <span class="have">— DONE</span></h3>
 <table>
-  <tr><th>Add</th><th>Freq tier</th><th>Cost</th><th>Why</th></tr>
-  <tr><td><span class="pill priority-1">A</span> Dollar volume floor + float turnover + OBV / up-down vol</td><td>T2 daily</td><td><span class="free">free</span> (local from existing bars)</td><td>Largest set of cheap, high-information additions to BUP++.</td></tr>
-  <tr><td><span class="pill priority-1">A</span> Macro regime multiplier (FRED + yfinance)</td><td>T2 daily</td><td><span class="free">free</span></td><td>Hook already wired; closes <code>macro_multiplier()</code>.</td></tr>
-  <tr><td><span class="pill priority-1">A</span> FINRA Reg SHO daily short volume</td><td>T2 daily</td><td><span class="free">free</span></td><td>One CSV/day, all tickers. Off-exchange short pressure.</td></tr>
-  <tr><td><span class="pill priority-1">A</span> Cluster-buying flag from existing Finnhub Form 4 data</td><td>T2 daily → T3 rollup</td><td><span class="free">free</span></td><td>Already pulling Form 4s. 3+ insiders in 30d = single strongest insider signal.</td></tr>
-  <tr><td><span class="pill priority-1">A</span> Sector ETF relative strength</td><td>T2 daily</td><td><span class="free">free</span></td><td>11 SPDR pulls. Tailwind/headwind for every name.</td></tr>
+  <tr><th>Add</th><th>Status</th><th>Implementation</th></tr>
+  <tr><td><span class="pill priority-1">A</span> Macro regime multiplier (FRED + yfinance)</td><td class="have">✓ live</td><td><code>macro_regime</code> scan; SPY/VIX classifier with ×0.7–×1.3 multiplier.</td></tr>
+  <tr><td><span class="pill priority-1">A</span> FINRA Reg SHO daily short volume</td><td class="have">✓ live</td><td><code>reg_sho</code> scan, daily 12:30 UTC.</td></tr>
+  <tr><td><span class="pill priority-1">A</span> Cluster-buying flag from Form 4 data</td><td class="have">✓ live</td><td><code>insider_cluster</code> + <code>insider_xml.classify_form4</code> XML buy/sell/noise split.</td></tr>
+  <tr><td><span class="pill priority-1">A</span> Sector ETF relative strength</td><td class="have">✓ live</td><td>Bundled into <code>macro_regime</code> (11 SPDRs).</td></tr>
+  <tr><td><span class="pill priority-1">A′</span> Dollar volume floor + float turnover + OBV / up-down vol</td><td class="partial">partial</td><td>Computed inside <code>tech_slice</code>'s setup detection; not yet exposed as a standalone signal.</td></tr>
 </table>
 
-<h3>Phase B — stand up the T3 weekly tier</h3>
+<h3>Phase B — stand up the T3 weekly tier <span class="partial">— partial</span></h3>
 <table>
-  <tr><th>Add</th><th>Freq tier</th><th>Cost</th><th>Why</th></tr>
-  <tr><td><span class="pill priority-2">B</span> Float / SI upgrade from Finnhub (replace yfinance)</td><td>T3 weekly</td><td><span class="free">free</span></td><td>Weekly cadence is honest — float barely changes. yfinance float unreliable for microcaps.</td></tr>
-  <tr><td><span class="pill priority-2">B</span> Options chains on T3 universe (~1500): P/C, IV rank, OI</td><td>T3 weekly + T2 daily OI Δ</td><td><span class="free">free</span></td><td>Slow per-ticker; weekly snapshot + daily OI Δ on watchlist is the right cadence.</td></tr>
-  <tr><td><span class="pill priority-2">B</span> Biotech PDUFA + clinicaltrials.gov calendar</td><td>T3 weekly</td><td><span class="free">free</span></td><td>Refreshes infrequently anyway; biotech-subset catalyst signal.</td></tr>
-  <tr><td><span class="pill priority-2">B</span> Analyst consensus PT + revision trend</td><td>T3 weekly</td><td><span class="free">free</span> (Finnhub)</td><td>Weekly enough — analysts don't move daily.</td></tr>
+  <tr><th>Add</th><th>Status</th><th>Notes</th></tr>
+  <tr><td><span class="pill priority-2">B</span> Float / SI upgrade from Finnhub (replace yfinance)</td><td class="miss">not yet</td><td>Still on yfinance via <code>fundamentals_snap</code>. Cheap upgrade.</td></tr>
+  <tr><td><span class="pill priority-2">B</span> Options chains on watchlist</td><td class="have">✓ live</td><td><code>options_unusual</code>, every 30 min mkt hrs.</td></tr>
+  <tr><td><span class="pill priority-2">B</span> Biotech PDUFA + clinicaltrials.gov calendar</td><td class="miss">not yet</td><td>Sector-specific; deprioritized until biotech setups dominate.</td></tr>
+  <tr><td><span class="pill priority-2">B</span> Analyst consensus PT + revision trend</td><td class="miss">not yet</td><td>Free via Finnhub; quick add when needed.</td></tr>
 </table>
 
-<h3>Phase C — stand up the T1 intraday tier &amp; T0 event poll</h3>
+<h3>Phase C — stand up the T1 intraday tier &amp; T0 event poll <span class="have">— DONE</span></h3>
 <table>
-  <tr><th>Add</th><th>Freq tier</th><th>Cost</th><th>Why</th></tr>
-  <tr><td><span class="pill priority-2">C</span> Alpaca premarket / intraday RVOL on T2 watchlist (~300)</td><td>T1 intraday</td><td><span class="free">free</span> IEX</td><td>Catches gap-and-go before close-of-day scan. Scoped to watchlist = cheap.</td></tr>
-  <tr><td><span class="pill priority-2">C</span> SC 13D/13G EDGAR poll</td><td>T0 event</td><td><span class="free">free</span></td><td>Real-time activist / accumulator detection. Triggers T1 promotion.</td></tr>
-  <tr><td><span class="pill priority-2">C</span> Halt / resume tape from Nasdaq trader feed</td><td>T0 event</td><td><span class="free">free</span></td><td>Best single intraday catalyst signal.</td></tr>
+  <tr><th>Add</th><th>Status</th><th>Implementation</th></tr>
+  <tr><td><span class="pill priority-2">C</span> Alpaca premarket / intraday RVOL on watchlist</td><td class="have">✓ live</td><td><code>rvol_stream</code> daemon; Alpaca IEX websocket, top-25, 5-min rolling, IEX-adjusted baseline.</td></tr>
+  <tr><td><span class="pill priority-2">C</span> SC 13D/13G EDGAR poll</td><td class="have">✓ live</td><td><code>sc_13dg</code> scan, hourly.</td></tr>
+  <tr><td><span class="pill priority-2">C</span> Halt / resume tape from Nasdaq trader feed</td><td class="have">✓ live</td><td><code>halt_tape</code> scan, every 2 min during mkt hrs.</td></tr>
 </table>
 
-<h3>Phase D — stand up the T4 monthly tier</h3>
+<h3>Phase D — stand up the T4 monthly tier <span class="partial">— partial</span></h3>
 <table>
-  <tr><th>Add</th><th>Freq tier</th><th>Cost</th><th>Why</th></tr>
-  <tr><td><span class="pill priority-2">D</span> 13F holdings + diffs (smart-money positioning)</td><td>T4 quarterly</td><td><span class="free">free</span> (EDGAR)</td><td>Quarterly anyway; one monthly bulk parse covers it.</td></tr>
-  <tr><td><span class="pill priority-2">D</span> 10-Q / 10-K XBRL refresh (cash, debt, runway)</td><td>T4 monthly + event-anchored</td><td><span class="free">free</span> (EDGAR XBRL)</td><td>Filings ~quarterly; gives the structural_score real teeth.</td></tr>
-  <tr><td><span class="pill priority-2">D</span> Lock-up expiration calendar (parse from S-1s)</td><td>T4 monthly</td><td><span class="free">free</span></td><td>Insider supply unlock dates. Catalyst calendar input.</td></tr>
+  <tr><th>Add</th><th>Status</th><th>Implementation</th></tr>
+  <tr><td><span class="pill priority-2">D</span> 13F holdings + diffs</td><td class="miss">deferred</td><td>Needs CUSIP→ticker resolution (OpenFIGI or curated map). Held pending product decision.</td></tr>
+  <tr><td><span class="pill priority-2">D</span> 10-Q / 10-K XBRL refresh</td><td class="have">✓ live</td><td><code>xbrl_facts</code> scan, daily 14:00 UTC; YoY revenue + NI via EDGAR XBRL companyfacts.</td></tr>
+  <tr><td><span class="pill priority-2">D</span> Lock-up expiration calendar (parse from S-1s)</td><td class="miss">not yet</td><td>Needs S-1 prospectus parsing; non-trivial regex/NLP work.</td></tr>
 </table>
 
 <h3>Phase E — paid sources, decide only after A–D are running</h3>
@@ -721,6 +956,127 @@ T0 (event):      ANY ticker          → can <em>promote</em> into T1 on a
   <li>Finnhub for insider data is solid; we use it for what it's best at.</li>
   <li>EDGAR direct pull for filings is the right move — beats all third-party wrappers.</li>
   <li>Gemini catalyst scoring is in the right place in the pipeline — gated by sieve so we only spend on the top 200.</li>
+</ul>
+
+<!-- ========================================================== -->
+<h2 id="improvements">17 · Potential improvements (next on the bench)</h2>
+
+<p>
+  Ordered by approximate value-per-hour-of-work. Items marked
+  <span class="pill priority-1">P1</span> are quick wins that build on
+  what's already running; <span class="pill priority-2">P2</span> are
+  meaningful additions that take more engineering;
+  <span class="pill priority-3">P3</span> are deferred / decision-needed.
+</p>
+
+<h3>P1 — quick wins on existing scans</h3>
+<ul>
+  <li><strong>xbrl_facts noise floor.</strong> The first live run awarded
+    26 of 38 fetched filings (68% award rate) because the “fresh XBRL
+    refresh” fallback fires whenever there's no prior-year comparable.
+    Either raise the floor (require prior-year data, drop the fallback)
+    or downgrade it to an info-only event with 0 points.</li>
+  <li><strong>xbrl_facts → cash &amp; runway.</strong> Same companyfacts
+    JSON also contains <code>CashAndCashEquivalentsAtCarryingValue</code>
+    and <code>NetCashProvidedByUsedInOperatingActivities</code>. Compute
+    cash burn-rate → runway-in-quarters per ticker. Single biggest dilution
+    risk signal we don't yet score.</li>
+  <li><strong>insider_cluster — add dollar-weighted scoring.</strong>
+    Right now we count buys vs sells. A $5M CEO open-market buy is
+    very different from three $50K director buys. <code>insider_xml</code>
+    already returns <code>buy_dollars</code>; just weight the award.</li>
+  <li><strong>halt_tape — dedupe consecutive resumes.</strong> The feed
+    re-publishes the same resume record across consecutive polls; the
+    scan currently re-awards on each. A persisted set of seen halt-IDs
+    would cut the dashboard noise by ~50%.</li>
+  <li><strong>rvol_stream — carry the prior-day-close in the baseline.</strong>
+    The IEX-adjusted baseline drops to zero on tickers that haven't
+    printed an IEX bar yet today, producing infinite RVOL on the first
+    bar. Cap RVOL at 20× or require N≥3 buckets before awarding.</li>
+  <li><strong>Dashboard — click a feed row to pin it.</strong>
+    Already-rendered rows scroll out of view as new events arrive. A
+    click-to-pin mechanism + a “pinned” strip above the feed would let
+    you keep a hit visible while you investigate.</li>
+  <li><strong>Dashboard — per-scan mute toggles.</strong> The 12 scan
+    tiles are already individually identifiable; one click should
+    hide that scan's events from the feed (e.g. mute <code>halt_tape</code>
+    after-hours when it's noise).</li>
+</ul>
+
+<h3>P2 — new scans &amp; signals</h3>
+<ul>
+  <li><strong>FINRA short-volume daily (T2).</strong> Public FINRA file,
+    one CSV/day, all tickers. Off-exchange short pressure is currently
+    blind — Reg SHO threshold list only catches the worst persistent
+    cases.</li>
+  <li><strong>Float / SI upgrade to Finnhub.</strong> yfinance's float
+    is unreliable on microcaps. A <code>fundamentals_snap</code> swap
+    to Finnhub's <code>/stock/profile2</code> + <code>/stock/social-sentiment</code>
+    would tighten the squeeze-setup signal materially.</li>
+  <li><strong>Analyst revision trend.</strong> Finnhub free tier exposes
+    <code>/stock/recommendation</code> and <code>/stock/price-target</code>.
+    A weekly delta scan would catch coverage initiations + PT raises
+    before they hit price.</li>
+  <li><strong>Lockup expiration calendar.</strong> Parse the lock-up
+    sections of recent S-1 / S-1/A prospectuses (regex on “Lock-up”
+    section + 180-day default). Surface tickers within 14 days of
+    expiry as catalyst-calendar entries.</li>
+  <li><strong>Premarket gappers daemon.</strong> Alpaca IEX delivers
+    premarket bars 4am–9:30am ET. A second daemon (or extension of
+    <code>rvol_stream</code>) that watches for &gt;5% premarket moves
+    on the full top-300 watchlist, not just top-25.</li>
+  <li><strong>Reddit / StockTwits sentiment scan.</strong> Both free.
+    Mention-count delta is a better retail-attention proxy than X.
+    Drives the “social” half of catalyst classification.</li>
+  <li><strong>News scan via Alpaca / Benzinga.</strong> We have the
+    Alpaca news endpoint keys; not currently wired into the live
+    daemon. Headlines for watchlist tickers should stream as events
+    alongside the structural signals.</li>
+</ul>
+
+<h3>P3 — bigger builds / decisions pending</h3>
+<ul>
+  <li><strong>13F holdings (deferred Phase D part 2).</strong> Needs a
+    CUSIP→ticker resolution path — OpenFIGI free tier (≤25 req/min, no
+    key needed) is the standard answer. Build is ~3–4 hrs once that
+    decision is made: parse 13F-HR INFORMATION TABLE XML, count new
+    holdings per CUSIP, persist quarterly state, award tickers showing
+    up in many new institutional positions.</li>
+  <li><strong>Catalyst-scoring loop on live events.</strong> The legacy
+    market-scan pipeline already uses Gemini to score catalysts on
+    yesterday's news. Routing live <code>hit</code> events through the
+    same scorer in real time (gated to ≤5 hits/hour to control cost)
+    would produce a high-confidence “top catalyst right now” list.</li>
+  <li><strong>Per-scan award decay tuning.</strong> Watchlist scores
+    currently decay at a single half-life (~12 hours). Different
+    signals deserve different decays — a halt resume is stale in 30
+    minutes; an XBRL revenue acceleration is fresh for days.</li>
+  <li><strong>Backtest harness.</strong> Every award has a ticker, timestamp,
+    and points. With 30 days of <code>events.json</code> history we could
+    measure forward-return distribution per scan and re-weight scoring
+    empirically instead of by intuition.</li>
+  <li><strong>Alpaca SIP feed</strong> (— paid, $99/mo). Only worth it if
+    intraday execution becomes part of the strategy. IEX free is fine
+    for current signal-only use on liquid names; microcap RVOL is
+    structurally noisy until then.</li>
+  <li><strong>Mobile dashboard.</strong> Current layout is desktop-first
+    (terminal column needs width). A condensed mobile view (scan strip
+    + watchlist only, feed behind a toggle) would let you glance at the
+    state from a phone.</li>
+</ul>
+
+<h3>Maintenance / hygiene</h3>
+<ul>
+  <li><strong>Persist <code>events.json</code> rotation.</strong> Currently
+    grows unbounded. Rotate at ~10k events or daily; archive older to
+    <code>data/live/archive/events-YYYYMMDD.json.gz</code>.</li>
+  <li><strong>Telemetry on alice.</strong> No external alerting if the
+    daemon dies and systemd can't restart it. A 1-line cron on a second
+    host that curls <code>/healthz</code> and pings Pushover on failure
+    would close the loop.</li>
+  <li><strong>Secret rotation.</strong> All keys live in
+    <code>~/raymond/.env</code> on alice. Rotation is manual; quarterly
+    rotation reminder.</li>
 </ul>
 
 <h3>What's missing the most</h3>
