@@ -239,6 +239,7 @@ SCHEDULES: list[Scan] = [
     Scan("sc_13dg",           "research.scans.sc_13dg",           every_n_minutes(60, offset=35),            "EDGAR SC 13D/G poll"),
     Scan("halt_tape",         "research.scans.halt_tape",         market_hours_every_n_min(2),               "NASDAQ trading halts"),
     Scan("fundamentals_snap", "research.scans.fundamentals_snap", daily_at(13, 15),                          "Finnhub fundamentals snapshot"),
+    Scan("xbrl_facts",       "research.scans.xbrl_facts",       daily_at(14, 0),                           "EDGAR 10-Q/10-K XBRL refresh"),
     Scan("macro_econ",        "research.scans.macro_econ",        daily_at_multi([(13, 20), (17, 20), (22, 20)]), "FRED macro series"),
 ]
 
