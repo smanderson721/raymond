@@ -231,14 +231,14 @@
   /* ── Scan strip (per-scan health rail) ──────────── */
   #scan-strip {
     display: grid;
-    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-template-columns: repeat(11, minmax(0, 1fr));
     gap: 6px;
     padding: 8px 16px;
     border-bottom: 1px solid var(--border);
     background: var(--panel);
   }
-  @media (max-width: 1280px) {
-    #scan-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  @media (max-width: 1400px) {
+    #scan-strip { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   }
   .scan-tile {
     position: relative;
@@ -356,6 +356,7 @@ const URLS = {
   hits:      "data/live/hits.json",
   status:    "data/live/status.json",
   macro:     "data/live/macro_state.json",
+  streams:   "data/live/_stream_status.json",
 };
 
 let seenEventKeys = new Set();
@@ -374,13 +375,14 @@ const SCAN_REGISTRY = [
   { id: "material_8k",       cron: "5 */2 * * *",          label: "every 2 hr (:05)",        stale_min: 180 },
   { id: "sc_13dg",           cron: "35 * * * *",           label: "hourly (:35)",            stale_min: 120 },
   { id: "halt_tape",         cron: "*/2 14-20 * * 1-5",    label: "2 min, mkt hrs UTC",      stale_min: 15 },
+  { id: "rvol_stream",       cron: "",                     label: "Alpaca IEX stream",       kind: "daemon" },
   { id: "options_unusual",   cron: "*/30 14-20 * * 1-5",   label: "30 min, mkt hrs UTC",     stale_min: 120 },
   { id: "reg_sho",           cron: "30 12 * * *",          label: "daily 12:30 UTC",         stale_min: 1500 },
   { id: "fundamentals_snap", cron: "15 13 * * *",          label: "daily 13:15 UTC",         stale_min: 1500 },
   { id: "macro_econ",        cron: "20 13,17,22 * * *",    label: "3× daily UTC",            stale_min: 800 },
 ];
 
-function renderScanStrip(runs) {
+function renderScanStrip(runs, streams) {
   const strip = document.getElementById("scan-strip");
   // pick the most-recent run per scan
   const latest = new Map();
@@ -390,6 +392,38 @@ function renderScanStrip(runs) {
   }
   const now = Date.now();
   strip.innerHTML = SCAN_REGISTRY.map(meta => {
+    // ── daemon (long-running stream) tile ──
+    if (meta.kind === "daemon") {
+      const st = streams && streams[meta.id];
+      let cls = "pending", line = "not started", right = "—";
+      if (st) {
+        if (st.error) { cls = "err"; line = st.error; }
+        else if (st.connected) {
+          cls = "ok recent";
+          line = `streaming · ${st.subscribed_count ?? 0} subs`;
+          if (st.last_bar_at) {
+            const ageMin = (now - Date.parse(st.last_bar_at)) / 60000;
+            right = ageMin < 1 ? "now"
+                  : ageMin < 60 ? `${Math.round(ageMin)}m ago`
+                  : `${(ageMin/60).toFixed(1)}h ago`;
+          } else {
+            right = "awaiting bars";
+          }
+        } else {
+          cls = "stale";
+          line = "disconnected";
+        }
+      }
+      const title = st ? JSON.stringify(st) : "daemon has not reported yet";
+      return `
+        <div class="scan-tile ${cls}" title="${title.replace(/"/g,'&quot;')}">
+          <div class="name">${meta.id}</div>
+          <div class="cron">${meta.label}</div>
+          <div class="meta"><span class="age">${line}</span><span>${right}</span></div>
+        </div>
+      `;
+    }
+    // ── periodic scan tile ──
     const last = latest.get(meta.id);
     let cls = "pending", age = "never", metaRight = "—";
     if (last) {
@@ -490,9 +524,9 @@ function pumpQueue() {
 }
 
 async function poll() {
-  const [events, watchlist, hits, status, macro] = await Promise.all([
+  const [events, watchlist, hits, status, macro, streams] = await Promise.all([
     jget(URLS.events), jget(URLS.watchlist), jget(URLS.hits),
-    jget(URLS.status), jget(URLS.macro),
+    jget(URLS.status), jget(URLS.macro), jget(URLS.streams),
   ]);
 
   if (events && Array.isArray(events.events)) {
@@ -538,7 +572,7 @@ async function poll() {
 
   if (status && Array.isArray(status.runs)) {
     const runs = status.runs;
-    renderScanStrip(runs);
+    renderScanStrip(runs, streams || {});
     document.getElementById("f-scans").textContent = runs.length;
     const last = runs[runs.length - 1];
     if (last) {
@@ -562,7 +596,7 @@ function tick() {
 setInterval(tick, 1000);
 tick();
 
-renderScanStrip([]);  // show pending tiles before first poll
+renderScanStrip([], {});  // show pending tiles before first poll
 poll();
 
 // ── Live updates via SSE (live_daemon) with poll fallback ────────────

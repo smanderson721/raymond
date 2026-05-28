@@ -245,6 +245,16 @@ SCHEDULES: list[Scan] = [
 SCANS: dict[str, Scan] = {s.name: s for s in SCHEDULES}
 
 
+# ── long-running stream daemons ───────────────────────────────
+# Unlike SCHEDULES (which fire on a timer), these are coroutines that
+# keep a persistent connection (e.g. Alpaca websocket) open for the
+# daemon's whole lifetime. Each entry is (name, module_path); the
+# module must expose ``async def run(stop_event, bus, log) -> None``.
+DAEMONS: list[tuple[str, str]] = [
+    ("rvol_stream", "research.scans.rvol_stream"),
+]
+
+
 # ── SSE broadcast ──────────────────────────────────────────────────────
 class Broadcaster:
     """Fan out SSE events to all connected clients."""
@@ -489,6 +499,23 @@ async def main_async(host: str, port: int) -> None:
     sched_task = asyncio.create_task(scheduler_loop(), name="scheduler")
     watcher_task = asyncio.create_task(file_watcher_loop(), name="file_watcher")
 
+    # ── spawn long-running stream daemons ──
+    daemon_stop = asyncio.Event()
+    daemon_tasks: list[asyncio.Task] = []
+    for dname, mod_path in DAEMONS:
+        try:
+            mod = importlib.import_module(mod_path)
+        except Exception as e:
+            log.error("failed to import daemon %s (%s): %s", dname, mod_path, e)
+            continue
+        run_fn = getattr(mod, "run", None)
+        if run_fn is None:
+            log.error("daemon %s has no run() coroutine", dname)
+            continue
+        t = asyncio.create_task(run_fn(daemon_stop, bus, log), name=f"daemon:{dname}")
+        daemon_tasks.append(t)
+        log.info("daemon %s started", dname)
+
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -498,10 +525,11 @@ async def main_async(host: str, port: int) -> None:
 
     log.info("shutting down")
     shutdown_event.set()
+    daemon_stop.set()
     # Nudge every SSE subscriber so they exit their wait_for() now rather
     # than after the 15s keep-alive timeout.
     await bus.publish("shutdown", {})
-    for t in (sched_task, watcher_task):
+    for t in (sched_task, watcher_task, *daemon_tasks):
         t.cancel()
         with suppress(asyncio.CancelledError):
             await t
