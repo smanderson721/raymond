@@ -178,7 +178,7 @@
   .row {
     padding: 9px 14px;
     display: grid;
-    grid-template-columns: 22px 58px 70px 1fr;
+    grid-template-columns: 22px 58px 70px 64px 64px 1fr;
     gap: 8px;
     align-items: center;
     border-bottom: 1px solid #1a1d23;
@@ -203,6 +203,32 @@
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
+  .row .spark { display: block; width: 60px; height: 16px; opacity: 0.85; }
+  .row .chip {
+    font: 700 9px/1 ui-monospace, monospace;
+    letter-spacing: 0.5px;
+    padding: 3px 5px;
+    border-radius: 3px;
+    text-align: center;
+    text-transform: uppercase;
+    background: #1a1d23;
+    color: var(--muted);
+    border: 1px solid transparent;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .chip.tech       { color:#7dd3fc; border-color:rgba(125,211,252,.35); background:rgba(125,211,252,.08); }
+  .chip.macro      { color:#facc15; border-color:rgba(250,204,21,.35); background:rgba(250,204,21,.08); }
+  .chip.macro_econ { color:#facc15; border-color:rgba(250,204,21,.35); background:rgba(250,204,21,.08); }
+  .chip.insider    { color:#a78bfa; border-color:rgba(167,139,250,.35); background:rgba(167,139,250,.08); }
+  .chip.options    { color:#fb923c; border-color:rgba(251,146,60,.35); background:rgba(251,146,60,.08); }
+  .chip.reg_sho    { color:#fb7185; border-color:rgba(251,113,133,.35); background:rgba(251,113,133,.08); }
+  .chip.material   { color:#34d399; border-color:rgba(52,211,153,.35); background:rgba(52,211,153,.08); }
+  .chip.sc_13dg    { color:#22d3ee; border-color:rgba(34,211,238,.35); background:rgba(34,211,238,.08); }
+  .chip.halt       { color:#f87171; border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.08); }
+  .chip.fundamentals { color:#94a3b8; border-color:rgba(148,163,184,.35); background:rgba(148,163,184,.08); }
+  .chip.rvol       { color:#4ade80; border-color:rgba(74,222,128,.35); background:rgba(74,222,128,.08); }
   .row .reason {
     color: var(--muted);
     font-size: 11px;
@@ -210,6 +236,30 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  /* Regime-change inline banner (separate from 🎯 hit banner) */
+  #regime-banner {
+    position: fixed;
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-30px);
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 10px 18px;
+    border-radius: 6px;
+    font: 700 13px/1.2 ui-monospace, monospace;
+    letter-spacing: 0.4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 50;
+  }
+  #regime-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #regime-banner.risk_on, #regime-banner.constructive { color: var(--green); border-color: var(--green); }
+  #regime-banner.risk_off, #regime-banner.defensive   { color: var(--red);   border-color: var(--red); }
+  #regime-banner.neutral { color: var(--muted); border-color: var(--border); }
 
   /* ── Footer ─────────────────────────────────────── */
   footer {
@@ -316,6 +366,8 @@
   <div class="reason" id="b-reason">—</div>
   <div class="scan" id="b-scan">—</div>
 </div>
+
+<div id="regime-banner"></div>
 
 <main>
   <section id="terminal-wrap">
@@ -488,20 +540,112 @@ function showBanner(hit) {
   b.classList.add("show");
   clearTimeout(showBanner._t);
   showBanner._t = setTimeout(() => b.classList.remove("show"), 8000);
+  playHitChime();
+}
+
+// ── audio: short triangle chime when a 🎯 hit banner fires ──
+let _audioCtx = null;
+function _getAudioCtx() {
+  if (_audioCtx) return _audioCtx;
+  try {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch (e) { return null; }
+  return _audioCtx;
+}
+// browsers require a user gesture before allowing audio playback
+document.addEventListener("click", () => { const c=_getAudioCtx(); if (c && c.state==="suspended") c.resume(); }, { once: true });
+function playHitChime() {
+  const ctx = _getAudioCtx();
+  if (!ctx || ctx.state !== "running") return;
+  const t = ctx.currentTime;
+  // two-tone ping: 900Hz → 1400Hz over 220ms
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(900, t);
+  osc.frequency.exponentialRampToValueAtTime(1400, t + 0.12);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + 0.25);
+}
+
+// ── regime-change inline banner ──
+let _prevRegime = null;
+function showRegimeBanner(prev, next, mult) {
+  const b = document.getElementById("regime-banner");
+  if (!b) return;
+  const arrow = prev ? `${prev.toUpperCase()} → ${next.toUpperCase()}` : next.toUpperCase();
+  b.textContent = `REGIME · ${arrow} · ×${mult}`;
+  b.className = ""; b.classList.add(next);
+  void b.offsetWidth;
+  b.classList.add("show");
+  clearTimeout(showRegimeBanner._t);
+  showRegimeBanner._t = setTimeout(() => b.classList.remove("show"), 6000);
+}
+
+// ── sparkline state ──
+const SPARK_MAX = 24;        // ~2 min at 5s poll
+const sparkData = new Map(); // ticker → [score, ...]
+function _scanChipClass(scan) {
+  if (!scan) return "";
+  if (scan.startsWith("tech"))        return "tech";
+  if (scan.startsWith("macro_econ"))  return "macro_econ";
+  if (scan.startsWith("macro"))       return "macro";
+  if (scan.startsWith("insider"))     return "insider";
+  if (scan.startsWith("options"))     return "options";
+  if (scan.startsWith("reg_sho"))     return "reg_sho";
+  if (scan.startsWith("material"))    return "material";
+  if (scan.startsWith("sc_13"))       return "sc_13dg";
+  if (scan.startsWith("halt"))        return "halt";
+  if (scan.startsWith("fundamentals")) return "fundamentals";
+  if (scan.startsWith("rvol"))        return "rvol";
+  return "";
+}
+function _sparkSVG(values) {
+  if (!values || values.length < 2) {
+    return '<svg class="spark" viewBox="0 0 60 16" preserveAspectRatio="none"></svg>';
+  }
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || 1;
+  const stepX = 60 / (values.length - 1);
+  const pts = values.map((v, i) => `${(i*stepX).toFixed(1)},${(14 - (v-min)/range*12).toFixed(1)}`).join(" ");
+  const trend = values[values.length-1] - values[0];
+  const stroke = trend >= 0 ? "#4ade80" : "#ff3366";
+  return `<svg class="spark" viewBox="0 0 60 16" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="1.4"/></svg>`;
 }
 
 function renderWatchlist(wl) {
   const w = document.getElementById("watch");
   const newTs = new Map(wl.map(r => [r.ticker, r.last_ts]));
+  // update sparkline series
+  const liveTickers = new Set(wl.map(r => r.ticker));
+  for (const r of wl) {
+    const arr = sparkData.get(r.ticker) || [];
+    const last = arr.length ? arr[arr.length-1] : null;
+    if (last === null || Math.abs(last - r.score) > 0.001) arr.push(r.score);
+    while (arr.length > SPARK_MAX) arr.shift();
+    sparkData.set(r.ticker, arr);
+  }
+  // garbage-collect tickers that fell off the watchlist
+  for (const tk of [...sparkData.keys()]) if (!liveTickers.has(tk)) sparkData.delete(tk);
+
   w.innerHTML = wl.slice(0, 10).map(r => {
     const flashing = !firstLoad && prevWatchTs.has(r.ticker) && prevWatchTs.get(r.ticker) !== r.last_ts;
     const topClass = r.rank === 1 ? "top1" : r.rank <= 3 ? "top3" : "";
     const reason = (r.last_reason || "").replace(/</g, "&lt;");
+    const chipClass = _scanChipClass(r.last_scan);
+    const chipLabel = (r.last_scan || "—").replace(/_/g, " ").slice(0, 7);
+    const spark = _sparkSVG(sparkData.get(r.ticker));
     return `
       <div class="row ${topClass} ${flashing ? "flash" : ""}">
         <span class="rank">${r.rank}</span>
         <span class="tk">${r.ticker}</span>
         <span class="score">${Number(r.score).toFixed(1)}</span>
+        ${spark}
+        <span class="chip ${chipClass}" title="${r.last_scan || ""}">${chipLabel}</span>
         <span class="reason" title="${reason}">${reason}</span>
       </div>
     `;
@@ -568,6 +712,11 @@ async function poll() {
     r.className = "regime " + macro.regime;
     document.getElementById("f-macro").textContent =
       `${macro.regime} (VIX ${macro.vix_level ?? "—"})`;
+    if (_prevRegime !== null && _prevRegime !== macro.regime) {
+      showRegimeBanner(_prevRegime, macro.regime, macro.multiplier);
+      playHitChime();
+    }
+    _prevRegime = macro.regime;
   }
 
   if (status && Array.isArray(status.runs)) {
