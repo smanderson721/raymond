@@ -5,22 +5,31 @@ name: Live Scans
 # dashboard can poll for updates.
 #
 # Cron schedules (UTC):
-#   macro_regime — every 15 min (env scan, ~30s wall time)
-#   tech_slice   — every 15 min, offset (~2 min wall time, rolling 400 tickers)
+#   macro_regime    — every 15 min                  (T1: 15min env scan)
+#   tech_slice      — every 15 min, offset +7        (T1: rolling 400 tickers)
+#   reg_sho         — daily 12:30 UTC                 (T3: after FINRA T+1 publish)
+#   insider_cluster — every 3 hours, :20              (T2: EDGAR index updates intraday)
 #
-# Both jobs use a single concurrency group so they serialise — this
-# prevents racing commits and keeps the event log monotonic.
+# All jobs share a single concurrency group so commits serialise.
 
 on:
   schedule:
     - cron: "*/15 * * * *"        # macro_regime — top of every 15 min
     - cron: "7-59/15 * * * *"     # tech_slice  — offset by 7 min
+    - cron: "30 12 * * *"         # reg_sho     — daily 12:30 UTC (08:30 ET)
+    - cron: "20 */3 * * *"        # insider_cluster — every 3 hours, :20
   workflow_dispatch:
     inputs:
       scan:
-        description: "Scan to run (macro_regime, tech_slice)"
+        description: "Scan to run"
         required: true
         default: "macro_regime"
+        type: choice
+        options:
+          - macro_regime
+          - tech_slice
+          - reg_sho
+          - insider_cluster
 
 permissions:
   contents: write
@@ -32,7 +41,7 @@ concurrency:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,10 +61,14 @@ jobs:
         run: |
           if [[ -n "${{ github.event.inputs.scan }}" ]]; then
             echo "scan=${{ github.event.inputs.scan }}" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.event.schedule }}" == "*/15 * * * *" ]]; then
-            echo "scan=macro_regime" >> "$GITHUB_OUTPUT"
           else
-            echo "scan=tech_slice" >> "$GITHUB_OUTPUT"
+            case "${{ github.event.schedule }}" in
+              "*/15 * * * *")     echo "scan=macro_regime"    >> "$GITHUB_OUTPUT" ;;
+              "7-59/15 * * * *")  echo "scan=tech_slice"      >> "$GITHUB_OUTPUT" ;;
+              "30 12 * * *")      echo "scan=reg_sho"         >> "$GITHUB_OUTPUT" ;;
+              "20 */3 * * *")     echo "scan=insider_cluster" >> "$GITHUB_OUTPUT" ;;
+              *)                  echo "scan=macro_regime"    >> "$GITHUB_OUTPUT" ;;
+            esac
           fi
 
       - name: Run scan

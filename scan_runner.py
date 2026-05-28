@@ -19,6 +19,8 @@ import traceback
 SCANS = {
     "macro_regime": "research.scans.macro_regime",
     "tech_slice": "research.scans.tech_slice",
+    "reg_sho": "research.scans.reg_sho",
+    "insider_cluster": "research.scans.insider_cluster",
     # add new scans here as they're built
 }
 
