@@ -250,6 +250,11 @@ class Broadcaster:
 
 bus = Broadcaster()
 
+# Set when the daemon is shutting down — SSE handlers watch this so
+# `runner.cleanup()` doesn't have to wait the full SIGTERM timeout for
+# long-lived stream responses to close on their own.
+shutdown_event: asyncio.Event | None = None
+
 
 # ── scan runner ────────────────────────────────────────────────────────
 async def run_scan(scan: Scan, loop: asyncio.AbstractEventLoop) -> None:
@@ -395,8 +400,9 @@ async def handle_stream(request: web.Request) -> web.StreamResponse:
     try:
         # send a hello so the client sees the connection is live
         await resp.write(b": connected\n\n")
-        last_ping = time.time()
         while True:
+            if shutdown_event is not None and shutdown_event.is_set():
+                break
             try:
                 event, data = await asyncio.wait_for(q.get(), timeout=15.0)
                 payload = f"event: {event}\ndata: {json.dumps(data, separators=(',',':'))}\n\n"
@@ -404,7 +410,6 @@ async def handle_stream(request: web.Request) -> web.StreamResponse:
             except asyncio.TimeoutError:
                 # keep-alive ping
                 await resp.write(b": ping\n\n")
-                last_ping = time.time()
     except (asyncio.CancelledError, ConnectionResetError):
         pass
     finally:
@@ -447,6 +452,9 @@ def build_app() -> web.Application:
 
 
 async def main_async(host: str, port: int) -> None:
+    global shutdown_event
+    shutdown_event = asyncio.Event()
+
     app = build_app()
     runner = web.AppRunner(app)
     await runner.setup()
@@ -465,6 +473,10 @@ async def main_async(host: str, port: int) -> None:
     await stop.wait()
 
     log.info("shutting down")
+    shutdown_event.set()
+    # Nudge every SSE subscriber so they exit their wait_for() now rather
+    # than after the 15s keep-alive timeout.
+    await bus.publish("shutdown", {})
     for t in (sched_task, watcher_task):
         t.cancel()
         with suppress(asyncio.CancelledError):
