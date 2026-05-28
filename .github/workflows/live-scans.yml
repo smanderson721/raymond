@@ -17,15 +17,21 @@ name: Live Scans
 # All jobs share a single concurrency group so commits serialise.
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"            # macro_regime
-    - cron: "7-59/15 * * * *"         # tech_slice
-    - cron: "30 12 * * *"             # reg_sho
-    - cron: "20 */3 * * *"            # insider_cluster
-    - cron: "*/30 14-20 * * 1-5"      # options_unusual (US market hours, weekdays)
-    - cron: "5 */2 * * *"             # material_8k
-    - cron: "15 13 * * *"             # fundamentals_snap
-    - cron: "20 13,17,22 * * *"       # macro_econ
+  # ── Cron schedules DISABLED 2026-05-28 ────────────────────────────
+  # All live scans now run inside live_daemon.py on the Oracle alice
+  # instance (always-on, schedules + SSE built in). See the README /
+  # systemd unit on alice. Re-enable these crons only if alice goes
+  # down and you need GHA as a temporary fallback. Manual dispatch
+  # below still works for ad-hoc runs.
+  # schedule:
+  #   - cron: "*/15 * * * *"            # macro_regime
+  #   - cron: "7-59/15 * * * *"         # tech_slice
+  #   - cron: "30 12 * * *"             # reg_sho
+  #   - cron: "20 */3 * * *"            # insider_cluster
+  #   - cron: "*/30 14-20 * * 1-5"      # options_unusual (US market hours, weekdays)
+  #   - cron: "5 */2 * * *"             # material_8k
+  #   - cron: "15 13 * * *"             # fundamentals_snap
+  #   - cron: "20 13,17,22 * * *"       # macro_econ
   workflow_dispatch:
     inputs:
       scan:
