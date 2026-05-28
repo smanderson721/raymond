@@ -141,26 +141,36 @@
   .ev {
     padding: 2px 16px;
     display: grid;
-    grid-template-columns: 64px 92px 1fr;
-    gap: 8px;
+    grid-template-columns: 64px 1fr;
+    gap: 10px;
     align-items: baseline;
-    border-left: 2px solid transparent;
+    border-left: 3px solid transparent;
   }
-  .ev:hover { background: rgba(255,255,255,0.02); }
-  .ev .ts { color: var(--dim); font-size: 11px; font-variant-numeric: tabular-nums; }
-  .ev .scan { color: var(--muted); font-size: 11px; }
+  .ev:hover { background: rgba(255,255,255,0.03); }
+  .ev .ts  { color: var(--dim); font-size: 11px; font-variant-numeric: tabular-nums; }
   .ev .msg { color: var(--text); white-space: pre; overflow: hidden; text-overflow: ellipsis; }
-  .ev.info .msg { color: var(--text); }
+  /* per-scan color (border + message tint). Applied via data-scan attribute. */
+  .ev[data-scan="macro_regime"]      { border-left-color:#facc15; } .ev[data-scan="macro_regime"]      .msg { color:#facc15; }
+  .ev[data-scan="tech_slice"]        { border-left-color:#7dd3fc; } .ev[data-scan="tech_slice"]        .msg { color:#cfe9ff; }
+  .ev[data-scan="insider_cluster"]   { border-left-color:#a78bfa; } .ev[data-scan="insider_cluster"]   .msg { color:#d8caff; }
+  .ev[data-scan="material_8k"]       { border-left-color:#34d399; } .ev[data-scan="material_8k"]       .msg { color:#bff0d8; }
+  .ev[data-scan="sc_13dg"]           { border-left-color:#22d3ee; } .ev[data-scan="sc_13dg"]           .msg { color:#b3eef7; }
+  .ev[data-scan="halt_tape"]         { border-left-color:#f87171; } .ev[data-scan="halt_tape"]         .msg { color:#ffc4c4; }
+  .ev[data-scan="rvol_stream"]       { border-left-color:#4ade80; } .ev[data-scan="rvol_stream"]       .msg { color:#bff5d0; }
+  .ev[data-scan="options_unusual"]   { border-left-color:#fb923c; } .ev[data-scan="options_unusual"]   .msg { color:#ffd2b0; }
+  .ev[data-scan="reg_sho"]           { border-left-color:#fb7185; } .ev[data-scan="reg_sho"]           .msg { color:#ffc7d1; }
+  .ev[data-scan="fundamentals_snap"] { border-left-color:#94a3b8; } .ev[data-scan="fundamentals_snap"] .msg { color:#cbd5e1; }
+  .ev[data-scan="xbrl_facts"]        { border-left-color:#e879f9; } .ev[data-scan="xbrl_facts"]        .msg { color:#f4c8fc; }
+  .ev[data-scan="macro_econ"]        { border-left-color:#fde047; } .ev[data-scan="macro_econ"]        .msg { color:#fdf3a5; }
+  /* notable/hit override the per-scan tint */
   .ev.notable {
-    border-left-color: var(--accent);
-    background: rgba(255, 210, 63, 0.04);
+    background: rgba(255, 210, 63, 0.06);
   }
-  .ev.notable .msg { color: var(--accent); }
+  .ev.notable .msg { color: var(--accent) !important; }
   .ev.hit {
-    border-left-color: var(--hit);
-    background: linear-gradient(90deg, rgba(255,51,102,0.08), transparent 60%);
+    background: linear-gradient(90deg, rgba(255,51,102,0.10), transparent 60%);
   }
-  .ev.hit .msg { color: #ffb3c5; font-weight: 600; }
+  .ev.hit .msg { color: #ffb3c5 !important; font-weight: 600; }
 
   /* Watchlist column */
   #watch-wrap {
@@ -281,39 +291,40 @@
   /* ── Scan strip (per-scan health rail) ──────────── */
   #scan-strip {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-auto-rows: minmax(0, 1fr);
     gap: 6px;
     padding: 8px 16px;
     border-bottom: 1px solid var(--border);
     background: var(--panel);
   }
-  @media (max-width: 1500px) {
-    #scan-strip { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  @media (max-width: 900px) {
+    #scan-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
   .scan-tile {
     position: relative;
-    padding: 6px 10px 7px;
+    padding: 8px 12px 9px;
     border-radius: 6px;
     background: var(--panel2);
     border: 1px solid var(--border);
-    border-left: 3px solid var(--dim);
+    border-left: 4px solid var(--dim);
     display: grid;
     grid-template-rows: auto auto auto;
-    gap: 2px;
+    gap: 3px;
     min-width: 0;
     overflow: hidden;
     transition: background 0.15s, border-color 0.15s;
   }
   .scan-tile .name {
-    font: 600 11px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    letter-spacing: 0.3px;
+    font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0.2px;
     color: var(--text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .scan-tile .cron {
-    font-size: 10px;
+    font-size: 10.5px;
     color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
@@ -323,16 +334,30 @@
     display: flex;
     justify-content: space-between;
     gap: 6px;
-    font-size: 10px;
+    font-size: 10.5px;
     color: var(--dim);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    overflow: hidden;
   }
-  .scan-tile .meta .age { color: var(--muted); }
+  .scan-tile .meta .age { color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
   .scan-tile.ok      { border-left-color: var(--green); }
   .scan-tile.stale   { border-left-color: var(--accent2); }
   .scan-tile.err     { border-left-color: var(--red); background: var(--red-dim); }
   .scan-tile.pending { border-left-color: var(--dim); opacity: 0.7; }
+  /* per-scan accent ribbon (overrides health border when tile is ok) */
+  .scan-tile.ok.scan-macro_regime      { border-left-color:#facc15; }
+  .scan-tile.ok.scan-tech_slice        { border-left-color:#7dd3fc; }
+  .scan-tile.ok.scan-insider_cluster   { border-left-color:#a78bfa; }
+  .scan-tile.ok.scan-material_8k       { border-left-color:#34d399; }
+  .scan-tile.ok.scan-sc_13dg           { border-left-color:#22d3ee; }
+  .scan-tile.ok.scan-halt_tape         { border-left-color:#f87171; }
+  .scan-tile.ok.scan-rvol_stream       { border-left-color:#4ade80; }
+  .scan-tile.ok.scan-options_unusual   { border-left-color:#fb923c; }
+  .scan-tile.ok.scan-reg_sho           { border-left-color:#fb7185; }
+  .scan-tile.ok.scan-fundamentals_snap { border-left-color:#94a3b8; }
+  .scan-tile.ok.scan-xbrl_facts        { border-left-color:#e879f9; }
+  .scan-tile.ok.scan-macro_econ        { border-left-color:#fde047; }
   .scan-tile.recent::after {
     content: "";
     position: absolute;
@@ -421,18 +446,18 @@ let firstLoad = true;
 // Cron schedules mirror .github/workflows/live-scans.yml. Update both.
 // "stale_min" = minutes after which a scan is considered overdue.
 const SCAN_REGISTRY = [
-  { id: "macro_regime",      cron: "*/15 * * * *",         label: "every 15 min",            stale_min: 30 },
-  { id: "tech_slice",        cron: "7-59/15 * * * *",      label: "every 15 min (+7)",       stale_min: 30 },
-  { id: "insider_cluster",   cron: "20 */3 * * *",         label: "every 3 hr (:20)",        stale_min: 240 },
-  { id: "material_8k",       cron: "5 */2 * * *",          label: "every 2 hr (:05)",        stale_min: 180 },
-  { id: "sc_13dg",           cron: "35 * * * *",           label: "hourly (:35)",            stale_min: 120 },
-  { id: "halt_tape",         cron: "*/2 14-20 * * 1-5",    label: "2 min, mkt hrs UTC",      stale_min: 15 },
-  { id: "rvol_stream",       cron: "",                     label: "Alpaca IEX stream",       kind: "daemon" },
-  { id: "options_unusual",   cron: "*/30 14-20 * * 1-5",   label: "30 min, mkt hrs UTC",     stale_min: 120 },
-  { id: "reg_sho",           cron: "30 12 * * *",          label: "daily 12:30 UTC",         stale_min: 1500 },
-  { id: "fundamentals_snap", cron: "15 13 * * *",          label: "daily 13:15 UTC",         stale_min: 1500 },
-  { id: "xbrl_facts",       cron: "0 14 * * *",           label: "daily 14:00 UTC",         stale_min: 1500 },
-  { id: "macro_econ",        cron: "20 13,17,22 * * *",    label: "3× daily UTC",            stale_min: 800 },
+  { id: "macro_regime",      title: "Macro Regime",       cron: "*/15 * * * *",       label: "every 15 min",          stale_min: 30   },
+  { id: "tech_slice",        title: "Technical",          cron: "7-59/15 * * * *",    label: "every 15 min (+7)",     stale_min: 30   },
+  { id: "insider_cluster",   title: "Insider Buying",     cron: "20 */3 * * *",       label: "every 3 hr",            stale_min: 240  },
+  { id: "material_8k",       title: "8-K Material",       cron: "5 */2 * * *",        label: "every 2 hr",            stale_min: 180  },
+  { id: "sc_13dg",           title: "Activist Stakes",    cron: "35 * * * *",         label: "hourly",                stale_min: 120  },
+  { id: "halt_tape",         title: "Halts & Resumes",    cron: "*/2 14-20 * * 1-5",  label: "every 2 min, mkt hrs",  stale_min: 15   },
+  { id: "rvol_stream",       title: "Live RVOL",          cron: "",                   label: "Alpaca IEX stream",     kind: "daemon" },
+  { id: "options_unusual",   title: "Unusual Options",    cron: "*/30 14-20 * * 1-5", label: "every 30 min, mkt hrs", stale_min: 120  },
+  { id: "reg_sho",           title: "Short Squeeze List", cron: "30 12 * * *",        label: "daily 12:30 UTC",       stale_min: 1500 },
+  { id: "fundamentals_snap", title: "Fundamentals",       cron: "15 13 * * *",        label: "daily 13:15 UTC",       stale_min: 1500 },
+  { id: "xbrl_facts",        title: "Earnings (XBRL)",    cron: "0 14 * * *",         label: "daily 14:00 UTC",       stale_min: 1500 },
+  { id: "macro_econ",        title: "Macro Econ",         cron: "20 13,17,22 * * *",  label: "3× daily UTC",          stale_min: 800  },
 ];
 
 function renderScanStrip(runs, streams) {
@@ -445,6 +470,8 @@ function renderScanStrip(runs, streams) {
   }
   const now = Date.now();
   strip.innerHTML = SCAN_REGISTRY.map(meta => {
+    const niceName = meta.title || meta.id;
+    const scanCls  = `scan-${meta.id}`;
     // ── daemon (long-running stream) tile ──
     if (meta.kind === "daemon") {
       const st = streams && streams[meta.id];
@@ -467,10 +494,10 @@ function renderScanStrip(runs, streams) {
           line = "disconnected";
         }
       }
-      const title = st ? JSON.stringify(st) : "daemon has not reported yet";
+      const title = `${meta.id}\n` + (st ? JSON.stringify(st, null, 2) : "daemon has not reported yet");
       return `
-        <div class="scan-tile ${cls}" title="${title.replace(/"/g,'&quot;')}">
-          <div class="name">${meta.id}</div>
+        <div class="scan-tile ${cls} ${scanCls}" title="${title.replace(/"/g,'&quot;')}">
+          <div class="name">${niceName}</div>
           <div class="cron">${meta.label}</div>
           <div class="meta"><span class="age">${line}</span><span>${right}</span></div>
         </div>
@@ -492,12 +519,13 @@ function renderScanStrip(runs, streams) {
       metaRight = `${last.events ?? 0}ev · ${last.awards ?? 0}aw`;
       if ((now - ts) < 90000) cls += " recent";
     }
+    const baseTitle = `${meta.id} · ${meta.cron || meta.label}`;
     const title = last && last.error
-      ? `error: ${last.error}`
-      : (last && last.note) ? last.note : `no run yet · ${meta.cron}`;
+      ? `${baseTitle}\nerror: ${last.error}`
+      : (last && last.note) ? `${baseTitle}\n${last.note}` : `${baseTitle}\nno run yet`;
     return `
-      <div class="scan-tile ${cls}" title="${title.replace(/"/g,'&quot;')}">
-        <div class="name">${meta.id}</div>
+      <div class="scan-tile ${cls} ${scanCls}" title="${title.replace(/"/g,'&quot;')}">
+        <div class="name">${niceName}</div>
         <div class="cron">${meta.label}</div>
         <div class="meta"><span class="age">${age}</span><span>${metaRight}</span></div>
       </div>
@@ -520,9 +548,10 @@ function renderEvent(ev) {
   const term = document.getElementById("terminal");
   const div = document.createElement("div");
   div.className = "ev " + lvlClass(ev.level);
+  if (ev.scan) div.setAttribute("data-scan", ev.scan);
+  div.title = ev.scan || "";   // hover to identify
   div.innerHTML = `
     <span class="ts">${fmtTs(ev.ts)}</span>
-    <span class="scan">${ev.scan || ""}</span>
     <span class="msg">${(ev.message || "").replace(/</g, "&lt;")}</span>
   `;
   term.appendChild(div);
