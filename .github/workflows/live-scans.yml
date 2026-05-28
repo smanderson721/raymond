@@ -5,19 +5,27 @@ name: Live Scans
 # dashboard can poll for updates.
 #
 # Cron schedules (UTC):
-#   macro_regime    — every 15 min                  (T1: 15min env scan)
-#   tech_slice      — every 15 min, offset +7        (T1: rolling 400 tickers)
-#   reg_sho         — daily 12:30 UTC                 (T3: after FINRA T+1 publish)
-#   insider_cluster — every 3 hours, :20              (T2: EDGAR index updates intraday)
+#   macro_regime      — every 15 min                       (T1: env scan)
+#   tech_slice        — every 15 min, offset +7              (T1: rolling 400 tickers)
+#   reg_sho           — daily 12:30 UTC                       (T3: post FINRA T+1)
+#   insider_cluster   — every 3 hours, :20                    (T2: EDGAR intraday)
+#   options_unusual   — every 30 min during US market hours   (T1: top watchlist)
+#   material_8k       — every 2 hours, :05                    (T2: EDGAR 8-Ks)
+#   fundamentals_snap — daily 13:15 UTC (09:15 ET)            (T3: Finnhub float/SI)
+#   macro_econ        — 3× daily (13:20 / 17:20 / 22:20 UTC) (T2: FRED releases)
 #
 # All jobs share a single concurrency group so commits serialise.
 
 on:
   schedule:
-    - cron: "*/15 * * * *"        # macro_regime — top of every 15 min
-    - cron: "7-59/15 * * * *"     # tech_slice  — offset by 7 min
-    - cron: "30 12 * * *"         # reg_sho     — daily 12:30 UTC (08:30 ET)
-    - cron: "20 */3 * * *"        # insider_cluster — every 3 hours, :20
+    - cron: "*/15 * * * *"            # macro_regime
+    - cron: "7-59/15 * * * *"         # tech_slice
+    - cron: "30 12 * * *"             # reg_sho
+    - cron: "20 */3 * * *"            # insider_cluster
+    - cron: "*/30 14-20 * * 1-5"      # options_unusual (US market hours, weekdays)
+    - cron: "5 */2 * * *"             # material_8k
+    - cron: "15 13 * * *"             # fundamentals_snap
+    - cron: "20 13,17,22 * * *"       # macro_econ
   workflow_dispatch:
     inputs:
       scan:
@@ -30,6 +38,10 @@ on:
           - tech_slice
           - reg_sho
           - insider_cluster
+          - options_unusual
+          - material_8k
+          - fundamentals_snap
+          - macro_econ
 
 permissions:
   contents: write
@@ -63,15 +75,24 @@ jobs:
             echo "scan=${{ github.event.inputs.scan }}" >> "$GITHUB_OUTPUT"
           else
             case "${{ github.event.schedule }}" in
-              "*/15 * * * *")     echo "scan=macro_regime"    >> "$GITHUB_OUTPUT" ;;
-              "7-59/15 * * * *")  echo "scan=tech_slice"      >> "$GITHUB_OUTPUT" ;;
-              "30 12 * * *")      echo "scan=reg_sho"         >> "$GITHUB_OUTPUT" ;;
-              "20 */3 * * *")     echo "scan=insider_cluster" >> "$GITHUB_OUTPUT" ;;
-              *)                  echo "scan=macro_regime"    >> "$GITHUB_OUTPUT" ;;
+              "*/15 * * * *")        echo "scan=macro_regime"      >> "$GITHUB_OUTPUT" ;;
+              "7-59/15 * * * *")     echo "scan=tech_slice"        >> "$GITHUB_OUTPUT" ;;
+              "30 12 * * *")         echo "scan=reg_sho"           >> "$GITHUB_OUTPUT" ;;
+              "20 */3 * * *")        echo "scan=insider_cluster"   >> "$GITHUB_OUTPUT" ;;
+              "*/30 14-20 * * 1-5")  echo "scan=options_unusual"   >> "$GITHUB_OUTPUT" ;;
+              "5 */2 * * *")         echo "scan=material_8k"       >> "$GITHUB_OUTPUT" ;;
+              "15 13 * * *")         echo "scan=fundamentals_snap" >> "$GITHUB_OUTPUT" ;;
+              "20 13,17,22 * * *")   echo "scan=macro_econ"        >> "$GITHUB_OUTPUT" ;;
+              *)                     echo "scan=macro_regime"      >> "$GITHUB_OUTPUT" ;;
             esac
           fi
 
       - name: Run scan
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
+          ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
         run: python scan_runner.py "${{ steps.pick.outputs.scan }}"
 
       - name: Commit live data

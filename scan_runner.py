@@ -17,10 +17,16 @@ import traceback
 
 
 SCANS = {
+    # Phase A
     "macro_regime": "research.scans.macro_regime",
     "tech_slice": "research.scans.tech_slice",
     "reg_sho": "research.scans.reg_sho",
     "insider_cluster": "research.scans.insider_cluster",
+    # Phase B
+    "options_unusual": "research.scans.options_unusual",
+    "material_8k": "research.scans.material_8k",
+    "fundamentals_snap": "research.scans.fundamentals_snap",
+    "macro_econ": "research.scans.macro_econ",
     # add new scans here as they're built
 }
 
