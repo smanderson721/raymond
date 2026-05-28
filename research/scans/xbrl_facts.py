@@ -33,6 +33,7 @@ from pathlib import Path
 import requests
 
 from research.live_score_engine import Session, LIVE_DIR
+from research.scan_weights import weight
 from research.scans.insider_cluster import (
     _load_cik_to_ticker, _business_days, _fetch_form_index,
 )
@@ -263,6 +264,7 @@ def run() -> dict:
 
             pts = 0.0
             bits: list[str] = []
+            primary_attr: str | None = None
             fp_label = rev_latest.get("fp", "?")
             fy_label = rev_latest.get("fy", "?")
 
@@ -271,19 +273,23 @@ def run() -> dict:
                 yoy = (rev_latest["val"] - rev_prior["val"]) / abs(rev_prior["val"])
                 pct = yoy * 100
                 if yoy >= 0.30:
-                    pts += 10.0
+                    pts += weight(SCAN_NAME, "revenue_acceleration", 10.0)
+                    primary_attr = "revenue_acceleration"
                     bits.append(f"revenue +{pct:.0f}% YoY")
                 elif yoy >= 0.15:
-                    pts += 6.0
+                    pts += weight(SCAN_NAME, "revenue_growth", 6.0)
+                    primary_attr = "revenue_growth"
                     bits.append(f"revenue +{pct:.0f}% YoY")
                 elif yoy <= -0.20:
-                    pts += 5.0
+                    pts += weight(SCAN_NAME, "revenue_contraction", 5.0)
+                    primary_attr = "revenue_contraction"
                     bits.append(f"revenue {pct:.0f}% YoY")
                 # else: modest growth/contraction — informational only
                 else:
                     bits.append(f"revenue {pct:+.0f}% YoY")
             else:
-                pts += 2.0
+                pts += weight(SCAN_NAME, "xbrl_refresh_first_time", 2.0)
+                primary_attr = "xbrl_refresh_first_time"
                 bits.append("fresh XBRL refresh")
 
             # net income YoY
@@ -293,19 +299,19 @@ def run() -> dict:
                     pv = ni_prior["val"]
                     lv = ni_latest["val"]
                     if pv < 0 <= lv:
-                        pts += 3.0
+                        pts += weight(SCAN_NAME, "turned_profitable", 3.0)
                         bits.append("turned profitable")
                     elif pv > 0 and lv > 0 and pv != 0:
                         nyoy = (lv - pv) / abs(pv)
                         if nyoy >= 0.50:
-                            pts += 2.0
+                            pts += weight(SCAN_NAME, "ni_strong_growth", 2.0)
                             bits.append(f"NI +{nyoy*100:.0f}% YoY")
 
             if pts <= 0:
                 continue
 
             reason = f"{form} {fp_label} FY{fy_label}: " + ", ".join(bits)
-            s.award(ticker, pts, reason)
+            s.award(ticker, pts, reason, attr_key=primary_attr)
             awarded += 1
 
         return {

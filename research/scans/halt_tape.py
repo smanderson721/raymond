@@ -38,6 +38,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from research.live_score_engine import Session
+from research.scan_weights import weight
 
 SCAN_NAME = "halt_tape"
 FEED_URL = "https://www.nasdaqtrader.com/rss.aspx?feed=tradehalts"
@@ -48,23 +49,25 @@ HEADERS = {
 TIMEOUT = 20
 
 # Per-halt scoring. Higher = stronger signal.
-REASON_PTS: dict[str, tuple[float, str]] = {
-    "T1":   (10.0, "news-pending halt (T1)"),
-    "T12":  (8.0,  "additional-info halt (T12)"),
-    "H10":  (12.0, "SEC trading suspension (H10)"),
-    "T6":   (6.0,  "extraordinary activity (T6)"),
-    "T2":   (5.0,  "news-released halt (T2)"),
-    "T5":   (4.0,  "single-stock circuit breaker (T5)"),
-    "LUDP": (3.0,  "limit up-down pause"),
-    "M":    (3.0,  "volatility trading pause (M)"),
-    "T8":   (2.0,  "ETF component halt (T8)"),
+# Defaults shown here; live values come from data/live/scan_weights.json.
+# Tuple: (default_points, attr_key, label)
+REASON_PTS: dict[str, tuple[float, str, str]] = {
+    "T1":   (10.0, "halt_t1_news_pending",          "news-pending halt (T1)"),
+    "T12":  (8.0,  "halt_t12_info_requested",       "additional-info halt (T12)"),
+    "H10":  (12.0, "halt_h10_sec_suspension",       "SEC trading suspension (H10)"),
+    "T6":   (6.0,  "halt_t6_extraordinary_activity", "extraordinary activity (T6)"),
+    "T2":   (5.0,  "halt_t2_news_released",         "news-released halt (T2)"),
+    "T5":   (4.0,  "halt_t5_circuit_breaker",       "single-stock circuit breaker (T5)"),
+    "LUDP": (3.0,  "halt_ludp_limit_up_down",       "limit up-down pause"),
+    "M":    (3.0,  "halt_m_volatility_pause",       "volatility trading pause (M)"),
+    "T8":   (2.0,  "halt_t8_etf_component",         "ETF component halt (T8)"),
 }
-DEFAULT_PTS = (3.0, "trading halt")
+DEFAULT_PTS = (3.0, "halt_other", "trading halt")
 
-# Bonuses
-LIVE_HALT_BONUS = 4.0       # no resume time yet — still halted
-FRESH_RESUME_WINDOW_MIN = 30  # resumed in the last N min
-FRESH_RESUME_BONUS = 2.0
+# Bonus default values (resolved live via weight())
+DEFAULT_LIVE_HALT_BONUS = 4.0       # no resume time yet — still halted
+FRESH_RESUME_WINDOW_MIN = 30        # resumed in the last N min
+DEFAULT_FRESH_RESUME_BONUS = 2.0
 
 # Cap how many filings we score per run (rare to see this many but defends
 # against a bad-XML day producing thousands of duplicate rows).
@@ -173,20 +176,21 @@ def run() -> dict:
 
         awarded = 0
         for rec in list(latest.values())[:MAX_AWARDS_PER_RUN]:
-            pts, label = REASON_PTS.get(rec["reason_code"], DEFAULT_PTS)
+            default_pts, attr_key, label = REASON_PTS.get(rec["reason_code"], DEFAULT_PTS)
+            pts = weight(SCAN_NAME, attr_key, default_pts)
             reason_bits = [label]
             if rec["resume_dt"] is None:
-                pts += LIVE_HALT_BONUS
+                pts += weight(SCAN_NAME, "halt_still_live_bonus", DEFAULT_LIVE_HALT_BONUS)
                 reason_bits.append("still halted")
             elif (now - rec["resume_dt"]).total_seconds() <= FRESH_RESUME_WINDOW_MIN * 60:
-                pts += FRESH_RESUME_BONUS
+                pts += weight(SCAN_NAME, "halt_fresh_resume_bonus", DEFAULT_FRESH_RESUME_BONUS)
                 resume_age_min = int((now - rec["resume_dt"]).total_seconds() // 60)
                 reason_bits.append(f"resumed {resume_age_min}m ago")
             else:
                 reason_bits.append("resumed")
             if rec["market"]:
                 reason_bits.append(rec["market"])
-            s.award(rec["symbol"], pts, " · ".join(reason_bits))
+            s.award(rec["symbol"], pts, " · ".join(reason_bits), attr_key=attr_key)
             awarded += 1
 
         return {

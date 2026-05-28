@@ -202,6 +202,27 @@
 </p>
 
 <h3>The 12 scans</h3>
+
+<div style="margin:0 0 1rem;padding:0.8rem 1rem;background:#1a1d23;border-left:3px solid #facc15;border-radius:4px">
+  <strong style="color:#facc15">How to read "top-N watchlist" in the Universe column.</strong>
+  Several scans (<code>fundamentals_snap</code>,
+  <code>options_unusual</code>, <code>rvol_stream</code>) only
+  examine the <em>top-N tickers from</em> <code>watchlist.json</code>,
+  which is itself a derived ranking of every ticker that has scored
+  points from <em>any other</em> scan, decayed with a 12-hour
+  half-life. It is <strong>not a pre-curated list and not a scan of
+  all ~6000 tickers</strong>. So these top-N scans are downstream of
+  whatever the upstream signal-discovery scans
+  (<code>tech_slice</code>, <code>insider_cluster</code>,
+  <code>material_8k</code>, <code>sc_13dg</code>, <code>halt_tape</code>,
+  <code>xbrl_facts</code>, <code>reg_sho</code>) have already surfaced
+  — a deliberate closed loop that respects API rate limits (Finnhub
+  55 req/min, Alpaca IEX 30 symbol subscriptions, yfinance ~2 s/ticker).
+  If a stock has never scored from any of those upstream scans, it will
+  never receive a fundamentals snapshot, an unusual-options check, or
+  an RVOL subscription.
+</div>
+
 <table>
   <tr>
     <th style="width:140px">Scan</th>
@@ -419,9 +440,23 @@
     feels like a steady ticker instead of a wall of text.</li>
   <li><strong>Top-10 watchlist</strong> (right column) is a time-decayed
     aggregate of recent awards. Each row shows rank, ticker, score, a
-    24-point sparkline (green if trending up, red if down), a colored
-    chip indicating the dominant source scan, and a short reason
-    fragment.</li>
+    24-point sparkline (green if trending up, red if down), and a
+    horizontally-scrolling marquee of attribute tags below — one chip
+    per distinct attribute that has scored the ticker recently
+    (e.g. <code>triple_8k</code>, <code>activist_13d</code>,
+    <code>revenue_acceleration</code>). Tag colour matches the source
+    scan; hover any row to pause the marquee.</li>
+  <li><strong>Scores decay with a 12-hour half-life.</strong> Every
+    award adds points; every poll re-applies the decay
+    <code>score × 0.5<sup>(elapsed / 12h)</sup></code>. So a single
+    +20 award is worth +20 immediately, +10 after 12 hours, +5 after
+    a day, and is auto-pruned below 0.1. Tickers slip off the
+    watchlist organically as their signals age out — there is no
+    manual eviction.</li>
+  <li><strong>Attribute tags decay faster than the score itself</strong>
+    (24-hour half-life, pruned when normalized weight &lt; 0.15) so a
+    ticker's tag set reflects what's currently driving it, not what
+    happened two days ago.</li>
   <li><strong>Hit banner + chime</strong> — any award labeled "hit"
     slides a banner across the top and plays a two-tone WebAudio chime
     (gated on first user click per browser autoplay policy).</li>

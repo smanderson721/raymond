@@ -40,6 +40,10 @@ HIT_THRESHOLD = 12          # single-event points >= this triggers a banner
 MAX_EVENTS = 600            # rolling event log size
 MAX_HITS = 60               # rolling hits log size
 WATCHLIST_SIZE = 30         # we emit top-30, page can show top-10
+ATTR_TAG_HALF_LIFE_HOURS = 24.0   # per-ticker attribute tags decay faster than score
+ATTR_TAG_HALF_LIFE_SEC = ATTR_TAG_HALF_LIFE_HOURS * 3600
+ATTR_TAG_MIN_WEIGHT = 0.15        # tags below this normalized weight get pruned
+MAX_ATTR_TAGS_PER_TICKER = 24     # cap the per-ticker tag list
 
 LEVELS = {"info": 1, "notable": 2, "hit": 3}
 
@@ -88,14 +92,42 @@ def _decay_all_scores(scores: dict, now_ts: float) -> dict:
         decayed = _decay(entry.get("score", 0.0), entry.get("last_ts", 0.0), now_ts)
         if decayed < 0.1:
             continue
+        # also decay any attached attribute tags
+        attrs = _decay_attrs(entry.get("attrs", []), now_ts)
         out[tk] = {
             "score": round(decayed, 3),
             "last_ts": entry.get("last_ts", now_ts),
             "events": entry.get("events", 0),
             "last_reason": entry.get("last_reason", ""),
             "last_scan": entry.get("last_scan", ""),
+            "attrs": attrs,
         }
     return out
+
+
+def _decay_attrs(attrs: list, now_ts: float) -> list:
+    """Decay per-ticker attribute tags. Each tag is
+    ``{key, label, scan, points, ts, weight}``. We rescale ``weight`` to the
+    decay since each tag's ``ts`` and prune tags whose normalized weight
+    falls below ``ATTR_TAG_MIN_WEIGHT``."""
+    if not attrs:
+        return []
+    out = []
+    for a in attrs:
+        ts = a.get("ts", 0)
+        base = max(0.0, float(a.get("points", 0)))
+        if ts <= 0 or base <= 0:
+            continue
+        dt = max(0.0, now_ts - ts)
+        w = base * math.pow(0.5, dt / ATTR_TAG_HALF_LIFE_SEC)
+        if w < ATTR_TAG_MIN_WEIGHT:
+            continue
+        a2 = dict(a)
+        a2["weight"] = round(w, 3)
+        out.append(a2)
+    # sort strongest tag first, cap list length
+    out.sort(key=lambda x: x.get("weight", 0), reverse=True)
+    return out[:MAX_ATTR_TAGS_PER_TICKER]
 
 
 # ─── Public API ─────────────────────────────────────────────────────────
@@ -141,17 +173,25 @@ class Session:
 
     # ── award points ──────────────────────────────────────────
     def award(self, ticker: str, points: float, reason: str,
-              level: Optional[str] = None) -> None:
+              level: Optional[str] = None,
+              attr_key: Optional[str] = None) -> None:
+        """Award ``points`` to ``ticker`` for ``reason``. ``attr_key`` (when
+        supplied) is the short snake_case key from ``scan_weights.json`` —
+        used to render the ticker's per-row attribute tag chips on the
+        dashboard and to attribute the award back to a tunable weight."""
         if not ticker or points == 0:
             return
         ticker = ticker.upper()
         cur = self._awards.setdefault(
             ticker,
             {"points": 0.0, "reasons": [], "scan": self.scan,
-             "best_points": float("-inf"), "best_reason": ""},
+             "best_points": float("-inf"), "best_reason": "",
+             "attr_keys": []},
         )
         cur["points"] += float(points)
         cur["reasons"].append(reason)
+        if attr_key:
+            cur["attr_keys"].append((attr_key, float(points), reason))
         if float(points) > cur["best_points"]:
             cur["best_points"] = float(points)
             cur["best_reason"] = reason
@@ -190,7 +230,8 @@ class Session:
         scores = _decay_all_scores(scores, now)
         for tk, a in self._awards.items():
             cur = scores.get(tk, {"score": 0.0, "events": 0,
-                                  "last_reason": "", "last_scan": ""})
+                                  "last_reason": "", "last_scan": "",
+                                  "attrs": []})
             cur["score"] = round(cur.get("score", 0.0) + a["points"], 3)
             cur["last_ts"] = now
             cur["events"] = cur.get("events", 0) + 1
@@ -200,6 +241,30 @@ class Session:
             if a.get("best_points", 0) > 0 or not cur.get("last_reason"):
                 cur["last_reason"] = new_reason
             cur["last_scan"] = a["scan"]
+            # append fresh attribute tags from this run (already decay-pruned
+            # in _decay_all_scores above). De-dupe: if a tag with the same
+            # attr_key + scan already exists, refresh its ts/points instead
+            # of stacking duplicates.
+            tags = cur.get("attrs", [])
+            scan_id = a["scan"]
+            for (attr_key, pts, reason_txt) in a.get("attr_keys", []):
+                existing = next((t for t in tags
+                                 if t.get("key") == attr_key and t.get("scan") == scan_id),
+                                None)
+                if existing:
+                    existing["points"] = max(float(existing.get("points", 0)), float(pts))
+                    existing["ts"] = now
+                    existing["weight"] = float(existing["points"])
+                else:
+                    tags.append({
+                        "key": attr_key,
+                        "label": attr_key.replace("_", " "),
+                        "scan": scan_id,
+                        "points": float(pts),
+                        "ts": now,
+                        "weight": float(pts),
+                    })
+            cur["attrs"] = tags
             scores[tk] = cur
         _write(SCORES_FILE, {
             "updated_at": now_iso,
@@ -236,6 +301,7 @@ class Session:
                 "last_scan": entry.get("last_scan", ""),
                 "last_ts": datetime.fromtimestamp(entry.get("last_ts", now),
                                                   tz=timezone.utc).isoformat(timespec="seconds"),
+                "attrs": entry.get("attrs", []),
             }
             for i, (tk, entry) in enumerate(ranked)
         ]

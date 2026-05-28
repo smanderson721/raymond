@@ -37,25 +37,26 @@ from research.scans.insider_cluster import (
     _load_cik_to_ticker, _business_days, _fetch_form_index,
 )
 from research.live_score_engine import Session
+from research.scan_weights import weight
 
 SCAN_NAME = "sc_13dg"
 LOOKBACK_DAYS = 2   # tight window — SC 13D/G are uncommon
 
-# award thresholds — SC 13D is much stronger than SC 13G
-PTS_13D = 12.0            # activist / 5%+ active stake — banner-eligible
-PTS_13D_AMEND = 7.0       # amendment: stake size change or new intent
-PTS_13G = 5.0             # passive 5%+ holder disclosure
-PTS_13G_AMEND = 3.0       # routine amendment
-CLUSTER_BONUS = 4.0       # ≥3 13D/G filings at one issuer in the window
+# Default award thresholds (overridable via scan_weights.json)
+DEFAULT_PTS_13D = 12.0            # activist / 5%+ active stake — banner-eligible
+DEFAULT_PTS_13D_AMEND = 7.0       # amendment: stake size change or new intent
+DEFAULT_PTS_13G = 5.0             # passive 5%+ holder disclosure
+DEFAULT_PTS_13G_AMEND = 3.0       # routine amendment
+DEFAULT_CLUSTER_BONUS = 4.0       # ≥3 13D/G filings at one issuer in the window
 
 
-# Map of EDGAR form types we care about to (points, label) tuples.
+# Map of EDGAR form types we care about to (default_points, attr_key, label).
 # The daily index reports forms verbatim, e.g. "SC 13D", "SC 13D/A".
-FORM_AWARDS: dict[str, tuple[float, str]] = {
-    "SC 13D":   (PTS_13D,       "SC 13D filed — 5%+ active stake"),
-    "SC 13D/A": (PTS_13D_AMEND, "SC 13D/A amendment"),
-    "SC 13G":   (PTS_13G,       "SC 13G filed — 5%+ passive holder"),
-    "SC 13G/A": (PTS_13G_AMEND, "SC 13G/A amendment"),
+FORM_AWARDS: dict[str, tuple[float, str, str]] = {
+    "SC 13D":   (DEFAULT_PTS_13D,       "sc_13d_filed", "SC 13D filed — 5%+ active stake"),
+    "SC 13D/A": (DEFAULT_PTS_13D_AMEND, "sc_13d_amend", "SC 13D/A amendment"),
+    "SC 13G":   (DEFAULT_PTS_13G,       "sc_13g_filed", "SC 13G filed — 5%+ passive holder"),
+    "SC 13G/A": (DEFAULT_PTS_13G_AMEND, "sc_13g_amend", "SC 13G/A amendment"),
 }
 
 
@@ -124,7 +125,8 @@ def run() -> dict:
             # pick the strongest form filed for this issuer — that's the
             # headline. Counts of weaker forms still feed cluster_bonus.
             best_form = max(forms.keys(), key=lambda f: FORM_AWARDS[f][0])
-            pts, label = FORM_AWARDS[best_form]
+            default_pts, attr_key, label = FORM_AWARDS[best_form]
+            pts = weight(SCAN_NAME, attr_key, default_pts)
             extras = [f"{n}× {f}" for f, n in forms.items() if f != best_form or n > 1]
             reason = label
             if extras:
@@ -132,10 +134,10 @@ def run() -> dict:
 
             total = sum(forms.values())
             if total >= 3:
-                pts += CLUSTER_BONUS
+                pts += weight(SCAN_NAME, "cluster_bonus", DEFAULT_CLUSTER_BONUS)
                 reason += f" — {total} filings clustered"
 
-            s.award(ticker, pts, reason)
+            s.award(ticker, pts, reason, attr_key=attr_key)
             awarded += 1
 
         return {

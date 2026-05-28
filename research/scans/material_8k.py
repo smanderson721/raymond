@@ -21,14 +21,16 @@ from research.scans.insider_cluster import (
     _http_get, _load_cik_to_ticker, _business_days, _fetch_form_index,
 )
 from research.live_score_engine import Session
+from research.scan_weights import weight
 
 SCAN_NAME = "material_8k"
 LOOKBACK_DAYS = 3   # short window — 8-Ks are rare-ish per issuer
 
-# award thresholds
-SINGLE_8K = 5.0           # one 8-K in window — material event
-MULTIPLE_8K = 10.0        # 2+ 8-Ks in window — sustained material flow
-TRIPLE_8K = 14.0          # 3+ 8-Ks — very active issuer (likely crisis or deal)
+# Default reward thresholds (overridable via data/live/scan_weights.json,
+# editable from the dashboard Attributes editor).
+DEFAULT_SINGLE_8K = 5.0           # one 8-K in window — material event
+DEFAULT_MULTIPLE_8K = 10.0        # 2+ 8-Ks in window — sustained material flow
+DEFAULT_TRIPLE_8K = 14.0          # 3+ 8-Ks — very active issuer (likely crisis or deal)
 
 
 def _parse_form_index_for_8k(text: str) -> list[int]:
@@ -91,12 +93,15 @@ def run() -> dict:
                 continue
             days_active = len(set(cik_per_day[cik]))
             if n >= 3:
-                pts, reason = TRIPLE_8K, f"{n} 8-K filings in {LOOKBACK_DAYS}d ({days_active} days)"
+                key = "triple_8k"
+                pts, reason = weight(SCAN_NAME, key, DEFAULT_TRIPLE_8K), f"{n} 8-K filings in {LOOKBACK_DAYS}d ({days_active} days)"
             elif n >= 2:
-                pts, reason = MULTIPLE_8K, f"{n} 8-K filings in {LOOKBACK_DAYS}d"
+                key = "multiple_8k"
+                pts, reason = weight(SCAN_NAME, key, DEFAULT_MULTIPLE_8K), f"{n} 8-K filings in {LOOKBACK_DAYS}d"
             else:
-                pts, reason = SINGLE_8K, f"8-K filed (material event)"
-            s.award(ticker, pts, reason)
+                key = "single_8k"
+                pts, reason = weight(SCAN_NAME, key, DEFAULT_SINGLE_8K), f"8-K filed (material event)"
+            s.award(ticker, pts, reason, attr_key=key)
             awarded += 1
 
         return {

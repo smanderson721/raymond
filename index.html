@@ -186,10 +186,15 @@
   #watch::-webkit-scrollbar { width: 8px; }
   #watch::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
   .row {
-    padding: 9px 14px;
+    padding: 9px 14px 8px;
     display: grid;
-    grid-template-columns: 22px 58px 70px 64px 64px 1fr;
-    gap: 8px;
+    grid-template-columns: 22px 1fr auto auto;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "rank tk score spark"
+      "rank tags tags tags";
+    column-gap: 10px;
+    row-gap: 5px;
     align-items: center;
     border-bottom: 1px solid #1a1d23;
     transition: background 0.3s;
@@ -199,12 +204,16 @@
     font: 700 11px/1 -apple-system, sans-serif;
     color: var(--dim);
     text-align: right;
+    grid-area: rank;
+    align-self: start;
+    padding-top: 2px;
   }
   .row.top1 .rank { color: var(--accent); font-size: 13px; }
   .row.top3 .rank { color: var(--accent2); }
   .row .tk {
     font: 700 14px/1 ui-monospace, monospace;
     color: var(--text);
+    grid-area: tk;
   }
   .row.top1 .tk { color: var(--accent); text-shadow: 0 0 6px rgba(255,210,63,0.5); }
   .row .score {
@@ -212,8 +221,9 @@
     color: var(--green);
     text-align: right;
     font-variant-numeric: tabular-nums;
+    grid-area: score;
   }
-  .row .spark { display: block; width: 60px; height: 16px; opacity: 0.85; }
+  .row .spark { display: block; width: 60px; height: 16px; opacity: 0.85; grid-area: spark; }
   .row .chip {
     font: 700 9px/1 ui-monospace, monospace;
     letter-spacing: 0.5px;
@@ -246,6 +256,56 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  /* Per-ticker attribute tag marquee (row 2 of the watchlist row).
+     If the tag track is wider than its container it slides continuously;
+     when it fits, the animation is disabled so short rows sit still. */
+  .row .tags {
+    grid-area: tags;
+    overflow: hidden;
+    position: relative;
+    height: 18px;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  }
+  .row .tags-track {
+    display: inline-flex;
+    gap: 5px;
+    white-space: nowrap;
+    will-change: transform;
+    padding-right: 24px;
+  }
+  .row .tags.scrolling .tags-track {
+    animation: tag-marquee linear infinite;
+  }
+  .row:hover .tags.scrolling .tags-track { animation-play-state: paused; }
+  @keyframes tag-marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .row .tag {
+    font: 600 9px/1 ui-monospace, monospace;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    padding: 3px 6px;
+    border-radius: 3px;
+    background: #1a1d23;
+    color: var(--muted);
+    border: 1px solid transparent;
+    flex: 0 0 auto;
+  }
+  .row .tag.tech         { color:#7dd3fc; border-color:rgba(125,211,252,.35); background:rgba(125,211,252,.08); }
+  .row .tag.macro        { color:#facc15; border-color:rgba(250,204,21,.35); background:rgba(250,204,21,.08); }
+  .row .tag.macro_econ   { color:#facc15; border-color:rgba(250,204,21,.35); background:rgba(250,204,21,.08); }
+  .row .tag.insider      { color:#a78bfa; border-color:rgba(167,139,250,.35); background:rgba(167,139,250,.08); }
+  .row .tag.options      { color:#fb923c; border-color:rgba(251,146,60,.35); background:rgba(251,146,60,.08); }
+  .row .tag.reg_sho      { color:#fb7185; border-color:rgba(251,113,133,.35); background:rgba(251,113,133,.08); }
+  .row .tag.material     { color:#34d399; border-color:rgba(52,211,153,.35); background:rgba(52,211,153,.08); }
+  .row .tag.sc_13dg      { color:#22d3ee; border-color:rgba(34,211,238,.35); background:rgba(34,211,238,.08); }
+  .row .tag.halt         { color:#f87171; border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.08); }
+  .row .tag.fundamentals { color:#94a3b8; border-color:rgba(148,163,184,.35); background:rgba(148,163,184,.08); }
+  .row .tag.xbrl_facts   { color:#c4b5fd; border-color:rgba(196,181,253,.35); background:rgba(196,181,253,.08); }
+  .row .tag.rvol         { color:#4ade80; border-color:rgba(74,222,128,.35); background:rgba(74,222,128,.08); }
 
   /* Regime-change inline banner (separate from 🎯 hit banner) */
   #regime-banner {
@@ -406,7 +466,7 @@
   <section id="watch-wrap">
     <div class="col-head">
       🏆 TOP 10 WATCHLIST
-      <span class="count" id="wl-meta">decay 12h</span>
+      <span class="count" id="wl-meta">scores decay with a 12-hour half-life</span>
     </div>
     <div id="watch"></div>
   </section>
@@ -672,21 +732,59 @@ function renderWatchlist(wl) {
   w.innerHTML = wl.slice(0, 10).map(r => {
     const flashing = !firstLoad && prevWatchTs.has(r.ticker) && prevWatchTs.get(r.ticker) !== r.last_ts;
     const topClass = r.rank === 1 ? "top1" : r.rank <= 3 ? "top3" : "";
-    const reason = (r.last_reason || "").replace(/</g, "&lt;");
-    const chipClass = _scanChipClass(r.last_scan);
-    const chipLabel = (r.last_scan || "—").replace(/_/g, " ").slice(0, 7);
     const spark = _sparkSVG(sparkData.get(r.ticker));
+    // Build the attribute-tag marquee. Tags are produced by
+    // ``research/live_score_engine.py`` (rolling, decay-pruned). Fall back
+    // to a single chip derived from last_scan/last_reason for the rare
+    // ticker that scored before the engine started tracking attrs[].
+    const attrs = Array.isArray(r.attrs) ? r.attrs : [];
+    let tagItems;
+    if (attrs.length) {
+      tagItems = attrs.map(a => {
+        const cls = _scanChipClass(a.scan || "");
+        const label = (a.label || a.key || "").replace(/_/g, " ");
+        const title = `${a.scan || ""} · ${a.key || ""} · +${Number(a.points||0).toFixed(1)} pts`;
+        return `<span class="tag ${cls}" title="${title.replace(/"/g,'&quot;')}">${label}</span>`;
+      });
+    } else {
+      const cls = _scanChipClass(r.last_scan || "");
+      const lbl = (r.last_scan || "—").replace(/_/g, " ");
+      const reason = (r.last_reason || "").replace(/</g, "&lt;").replace(/"/g,'&quot;');
+      tagItems = [`<span class="tag ${cls}" title="${reason}">${lbl}</span>`];
+    }
+    const tagsHTML = tagItems.join("");
+    // Duplicate the track once so the keyframe ``translateX(-50%)`` loop
+    // is seamless; ``.scrolling`` is added in a post-render pass below
+    // only when the track overflows its container.
     return `
-      <div class="row ${topClass} ${flashing ? "flash" : ""}">
+      <div class="row ${topClass} ${flashing ? "flash" : ""}" data-ticker="${r.ticker}">
         <span class="rank">${r.rank}</span>
         <span class="tk">${r.ticker}</span>
         <span class="score">${Number(r.score).toFixed(1)}</span>
         ${spark}
-        <span class="chip ${chipClass}" title="${r.last_scan || ""}">${chipLabel}</span>
-        <span class="reason" title="${reason}">${reason}</span>
+        <div class="tags"><div class="tags-track">${tagsHTML}${tagsHTML}</div></div>
       </div>
     `;
   }).join("");
+  // Decide which rows need the marquee animation. We measure the
+  // duplicated track: half its width is the "real" content width; if
+  // that exceeds the container, enable the scroll and set a duration
+  // proportional to length (≈ 30 px/sec).
+  requestAnimationFrame(() => {
+    w.querySelectorAll(".row .tags").forEach(box => {
+      const track = box.querySelector(".tags-track");
+      if (!track) return;
+      const realW = track.scrollWidth / 2;
+      if (realW > box.clientWidth + 4) {
+        const dur = Math.max(8, Math.round(realW / 30));
+        track.style.animationDuration = `${dur}s`;
+        box.classList.add("scrolling");
+      } else {
+        box.classList.remove("scrolling");
+        track.style.animationDuration = "";
+      }
+    });
+  });
   prevWatchTs = newTs;
   if (firstLoad) firstLoad = false;
   else setTimeout(() => {

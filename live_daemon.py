@@ -472,15 +472,79 @@ async def handle_health(request: web.Request) -> web.Response:
     })
 
 
+async def handle_get_weights(request: web.Request) -> web.Response:
+    """Return the full per-scan attribute reward catalog.
+    Scan modules read these values via ``research.scan_weights.weight()`` on
+    every run (mtime-cached), so a PUT to this endpoint takes effect on the
+    very next scheduled run — no restart needed."""
+    from research.scan_weights import all_weights
+    return web.json_response(all_weights(), headers={"Cache-Control": "no-store"})
+
+
+async def handle_put_weights(request: web.Request) -> web.Response:
+    """Persist a full or partial weights payload. The payload MUST contain a
+    top-level ``scans`` object; missing keys preserve the current values."""
+    from research.scan_weights import all_weights, write_weights
+    try:
+        payload = await request.json()
+    except Exception as e:
+        return web.json_response({"error": f"bad json: {e}"}, status=400)
+    if not isinstance(payload, dict) or "scans" not in payload:
+        return web.json_response({"error": "missing 'scans' key"}, status=400)
+    # Deep-merge: only the points (and optional description) of each attribute
+    # is editable from the UI. Other fields (label, live_editable, multipliers,
+    # thresholds) are preserved as-is.
+    current = all_weights() or {"scans": {}}
+    for scan_id, scan_blob in payload.get("scans", {}).items():
+        cur_scan = current.setdefault("scans", {}).setdefault(scan_id, {})
+        for attr_key, attr_blob in (scan_blob.get("attributes") or {}).items():
+            if not isinstance(attr_blob, dict) or "points" not in attr_blob:
+                continue
+            try:
+                pts = float(attr_blob["points"])
+            except (TypeError, ValueError):
+                continue
+            cur_attrs = cur_scan.setdefault("attributes", {})
+            cur_attr = cur_attrs.setdefault(attr_key, {})
+            cur_attr["points"] = pts
+            if "description" in attr_blob:
+                cur_attr["description"] = attr_blob["description"]
+    fresh = write_weights(current)
+    log.info("scan_weights.json updated via API (%d scans)", len(fresh.get("scans", {})))
+    bus.publish("weights", {"updated_at": fresh.get("_meta", {}).get("updated_at")})
+    return web.json_response(fresh, headers={"Cache-Control": "no-store"})
+
+
+@web.middleware
+async def cors_middleware(request: web.Request, handler):
+    """Permissive CORS for the dashboard + the cross-origin Attributes editor
+    in pitches.html (served by the local video-essays dev server on a
+    different origin)."""
+    if request.method == "OPTIONS":
+        return web.Response(status=204, headers={
+            "Access-Control-Allow-Origin":  "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Max-Age":       "600",
+        })
+    resp = await handler(request)
+    resp.headers.setdefault("Access-Control-Allow-Origin",  "*")
+    resp.headers.setdefault("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
+    resp.headers.setdefault("Access-Control-Allow-Headers", "Content-Type")
+    return resp
+
+
 # ── app wiring ─────────────────────────────────────────────────────────
 def build_app() -> web.Application:
-    app = web.Application()
+    app = web.Application(middlewares=[cors_middleware])
     app.router.add_get("/", handle_index)
     app.router.add_get("/index.html", handle_index)
     app.router.add_get("/healthz", handle_health)
     app.router.add_get("/api/state", handle_state)
     app.router.add_get("/api/stream", handle_stream)
     app.router.add_post("/api/run/{name}", handle_manual_run)
+    app.router.add_get("/api/scan-weights", handle_get_weights)
+    app.router.add_put("/api/scan-weights", handle_put_weights)
     app.router.add_get("/data/live/{name}", handle_live_file)
     # Also serve other static repo files (favicon etc.) on demand
     return app
