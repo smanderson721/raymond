@@ -1,7 +1,7 @@
 {
   "_meta": {
     "description": "Per-scan attribute reward catalog. Edited via the Attributes subtab in pitches.html or directly here. Hot-reloaded by scans on file mtime change; no restart needed.",
-    "updated_at": "2026-05-29T12:00:00Z",
+    "updated_at": "2026-05-29T22:54:09+00:00",
     "engine": {
       "half_life_hours": 12.0,
       "hit_threshold": 12.0
@@ -12,148 +12,463 @@
       "label": "Market Pulse",
       "live_editable": true,
       "attributes": {
-        "sector_leader":  { "points": 4.0, "description": "SPDR sector ranked #1 by trailing 5-day return" },
-        "sector_second":  { "points": 2.5, "description": "SPDR sector ranked #2 by trailing 5-day return" },
-        "sector_third":   { "points": 1.5, "description": "SPDR sector ranked #3 by trailing 5-day return" }
+        "sector_leader": {
+          "points": 4.0,
+          "description": "SPDR sector ranked #1 by trailing 5-day return"
+        },
+        "sector_second": {
+          "points": 2.5,
+          "description": "SPDR sector ranked #2 by trailing 5-day return"
+        },
+        "sector_third": {
+          "points": 1.5,
+          "description": "SPDR sector ranked #3 by trailing 5-day return"
+        }
       },
       "multipliers": {
-        "clear":    { "value": 1.30, "description": "Health score 80-100 — broad expansion, low vol, steep curve" },
-        "fair":     { "value": 1.15, "description": "Health score 60-80 — constructive, mild risks" },
-        "overcast": { "value": 1.00, "description": "Health score 40-60 — mixed, watchful" },
-        "stormy":   { "value": 0.85, "description": "Health score 20-40 — elevated vol, weak breadth" },
-        "severe":   { "value": 0.70, "description": "Health score 0-20 — panic / broad selling" }
+        "clear": {
+          "value": 1.3,
+          "description": "Health score 80-100 \u2014 broad expansion, low vol, steep curve"
+        },
+        "fair": {
+          "value": 1.15,
+          "description": "Health score 60-80 \u2014 constructive, mild risks"
+        },
+        "overcast": {
+          "value": 1.0,
+          "description": "Health score 40-60 \u2014 mixed, watchful"
+        },
+        "stormy": {
+          "value": 0.85,
+          "description": "Health score 20-40 \u2014 elevated vol, weak breadth"
+        },
+        "severe": {
+          "value": 0.7,
+          "description": "Health score 0-20 \u2014 panic / broad selling"
+        }
       }
     },
     "tech_slice": {
       "label": "Technical",
       "live_editable": true,
       "attributes": {
-        "breakout_20d_high_vol":     { "points": 10.0, "description": "20-day high break on >=1.5x volume (base; scales up to +8 with volume ratio)" },
-        "squeeze_release_momentum":  { "points":  8.0, "description": "Bollinger squeeze release with directional momentum" },
-        "pullback_sma50_rsi_cross":  { "points":  6.0, "description": "Pullback to SMA50 with RSI cross through 45-55 in uptrend" },
-        "stepped_volume_no_blowoff": { "points":  5.0, "description": "5d-avg volume >=2.0x 60d prior without extreme intraday move" },
-        "coiling_above_sma50":       { "points":  4.0, "description": "ATR < 1.5% but holding above SMA50 in uptrend" },
-        "clean_momentum_trend":      { "points":  4.0, "description": "RSI 55-68, +3% 5d, +5-30% 20d" },
-        "rvol_daily_mega":           { "points": 12.0, "description": "Today's session volume >=5x the 20-day average (broad-universe RVOL)" },
-        "rvol_daily_strong":         { "points":  8.0, "description": "Today's session volume >=3x the 20-day average" },
-        "rvol_daily_notable":        { "points":  5.0, "description": "Today's session volume >=2x the 20-day average" },
-        "overextended_penalty":      { "points": -6.0, "description": "RSI > 80 or +30% in last 5 days (negative)" }
+        "breakout_20d_high_vol": {
+          "points": 10.0,
+          "description": "20-day high break on >=1.5x volume (base; scales up to +8 with volume ratio)"
+        },
+        "squeeze_release_momentum": {
+          "points": 8.0,
+          "description": "Bollinger squeeze release with directional momentum"
+        },
+        "pullback_sma50_rsi_cross": {
+          "points": 6.0,
+          "description": "Pullback to SMA50 with RSI cross through 45-55 in uptrend"
+        },
+        "stepped_volume_no_blowoff": {
+          "points": 5.0,
+          "description": "5d-avg volume >=2.0x 60d prior without extreme intraday move"
+        },
+        "coiling_above_sma50": {
+          "points": 4.0,
+          "description": "ATR < 1.5% but holding above SMA50 in uptrend"
+        },
+        "clean_momentum_trend": {
+          "points": 4.0,
+          "description": "RSI 55-68, +3% 5d, +5-30% 20d"
+        },
+        "rvol_daily_mega": {
+          "points": 12.0,
+          "description": "Today's session volume >=5x the 20-day average (broad-universe RVOL)"
+        },
+        "rvol_daily_strong": {
+          "points": 8.0,
+          "description": "Today's session volume >=3x the 20-day average"
+        },
+        "rvol_daily_notable": {
+          "points": 5.0,
+          "description": "Today's session volume >=2x the 20-day average"
+        },
+        "overextended_penalty": {
+          "points": -6.0,
+          "description": "RSI > 80 or +30% in last 5 days (negative)"
+        }
       }
     },
     "insider_cluster": {
       "label": "Insider Buying",
       "live_editable": false,
       "attributes": {
-        "buy_cluster_mega":           { "points": 16.0, "description": "Form 4 buy cluster with peak day >=15 buys at one issuer" },
-        "buy_cluster_hot":            { "points": 12.0, "description": "Form 4 buy cluster with peak day >=10 buys" },
-        "buy_cluster_standard":       { "points":  7.0, "description": "Form 4 buy cluster (>=3 buys/day, >=2 active days)" },
-        "buy_cluster_multi_day_bonus":{ "points":  2.0, "description": "Bonus when buy cluster spans 3+ active days with peak >=10" },
-        "sell_cluster_mega":          { "points":  6.0, "description": "Form 4 sell cluster with peak day >=15 sells" },
-        "sell_cluster_hot":           { "points":  4.0, "description": "Form 4 sell cluster with peak day >=10 sells" },
-        "sell_cluster_standard":      { "points":  2.0, "description": "Form 4 sell cluster (>=3 sells/day)" }
+        "buy_cluster_mega": {
+          "points": 16.0,
+          "description": "Form 4 buy cluster with peak day >=15 buys at one issuer"
+        },
+        "buy_cluster_hot": {
+          "points": 12.0,
+          "description": "Form 4 buy cluster with peak day >=10 buys"
+        },
+        "buy_cluster_standard": {
+          "points": 7.0,
+          "description": "Form 4 buy cluster (>=3 buys/day, >=2 active days)"
+        },
+        "buy_cluster_multi_day_bonus": {
+          "points": 2.0,
+          "description": "Bonus when buy cluster spans 3+ active days with peak >=10"
+        },
+        "sell_cluster_mega": {
+          "points": 6.0,
+          "description": "Form 4 sell cluster with peak day >=15 sells"
+        },
+        "sell_cluster_hot": {
+          "points": 4.0,
+          "description": "Form 4 sell cluster with peak day >=10 sells"
+        },
+        "sell_cluster_standard": {
+          "points": 2.0,
+          "description": "Form 4 sell cluster (>=3 sells/day)"
+        }
       }
     },
     "material_8k": {
       "label": "8-K Material",
       "live_editable": true,
       "attributes": {
-        "single_8k":   { "points":  5.0, "description": "1x Form 8-K in the 3-day lookback window" },
-        "multiple_8k": { "points": 10.0, "description": "2x Form 8-K in the 3-day lookback window" },
-        "triple_8k":   { "points": 14.0, "description": "3x+ Form 8-K in the 3-day lookback window" }
+        "single_8k": {
+          "points": 5.0,
+          "description": "1x Form 8-K in the 3-day lookback window"
+        },
+        "multiple_8k": {
+          "points": 10.0,
+          "description": "2x Form 8-K in the 3-day lookback window"
+        },
+        "triple_8k": {
+          "points": 14.0,
+          "description": "3x+ Form 8-K in the 3-day lookback window"
+        }
       }
     },
     "sc_13dg": {
       "label": "Activist Stakes",
       "live_editable": true,
       "attributes": {
-        "sc_13d_filed":  { "points": 12.0, "description": "Fresh SC 13D filing (activist >=5% beneficial owner)" },
-        "sc_13d_amend":  { "points":  7.0, "description": "SC 13D/A amendment" },
-        "sc_13g_filed":  { "points":  5.0, "description": "Fresh SC 13G filing (passive >=5% holder)" },
-        "sc_13g_amend":  { "points":  3.0, "description": "SC 13G/A amendment" },
-        "cluster_bonus": { "points":  4.0, "description": "Bonus when 3+ 13D/G filings land on the same issuer" }
+        "sc_13d_filed": {
+          "points": 12.0,
+          "description": "Fresh SC 13D filing (activist >=5% beneficial owner)"
+        },
+        "sc_13d_amend": {
+          "points": 7.0,
+          "description": "SC 13D/A amendment"
+        },
+        "sc_13g_filed": {
+          "points": 5.0,
+          "description": "Fresh SC 13G filing (passive >=5% holder)"
+        },
+        "sc_13g_amend": {
+          "points": 3.0,
+          "description": "SC 13G/A amendment"
+        },
+        "cluster_bonus": {
+          "points": 4.0,
+          "description": "Bonus when 3+ 13D/G filings land on the same issuer"
+        }
       }
     },
     "halt_tape": {
       "label": "Halts & Resumes",
       "live_editable": true,
       "attributes": {
-        "halt_t1_news_pending":          { "points": 10.0, "description": "T1 halt: news pending" },
-        "halt_t12_info_requested":       { "points":  8.0, "description": "T12 halt: additional information requested" },
-        "halt_h10_sec_suspension":       { "points": 12.0, "description": "H10 halt: SEC trading suspension" },
-        "halt_t6_extraordinary_activity":{ "points":  6.0, "description": "T6 halt: extraordinary market activity" },
-        "halt_t2_news_released":         { "points":  5.0, "description": "T2 halt: news released (post-halt dissemination)" },
-        "halt_t5_circuit_breaker":       { "points":  4.0, "description": "T5 halt: single-stock circuit breaker" },
-        "halt_ludp_limit_up_down":       { "points":  3.0, "description": "LUDP halt: limit up-down pause" },
-        "halt_m_volatility_pause":       { "points":  3.0, "description": "M halt: volatility trading pause" },
-        "halt_t8_etf_component":         { "points":  2.0, "description": "T8 halt: ETF component issue" },
-        "halt_still_live_bonus":         { "points":  4.0, "description": "Bonus when no resume time has been posted yet" },
-        "halt_fresh_resume_bonus":       { "points":  2.0, "description": "Bonus when ticker resumed in the last 30 minutes" }
+        "halt_t1_news_pending": {
+          "points": 10.0,
+          "description": "T1 halt: news pending"
+        },
+        "halt_t12_info_requested": {
+          "points": 8.0,
+          "description": "T12 halt: additional information requested"
+        },
+        "halt_h10_sec_suspension": {
+          "points": 12.0,
+          "description": "H10 halt: SEC trading suspension"
+        },
+        "halt_t6_extraordinary_activity": {
+          "points": 6.0,
+          "description": "T6 halt: extraordinary market activity"
+        },
+        "halt_t2_news_released": {
+          "points": 5.0,
+          "description": "T2 halt: news released (post-halt dissemination)"
+        },
+        "halt_t5_circuit_breaker": {
+          "points": 4.0,
+          "description": "T5 halt: single-stock circuit breaker"
+        },
+        "halt_ludp_limit_up_down": {
+          "points": 3.0,
+          "description": "LUDP halt: limit up-down pause"
+        },
+        "halt_m_volatility_pause": {
+          "points": 3.0,
+          "description": "M halt: volatility trading pause"
+        },
+        "halt_t8_etf_component": {
+          "points": 2.0,
+          "description": "T8 halt: ETF component issue"
+        },
+        "halt_still_live_bonus": {
+          "points": 4.0,
+          "description": "Bonus when no resume time has been posted yet"
+        },
+        "halt_fresh_resume_bonus": {
+          "points": 2.0,
+          "description": "Bonus when ticker resumed in the last 30 minutes"
+        }
       }
     },
     "rvol_stream": {
       "label": "Live RVOL",
       "live_editable": false,
       "attributes": {
-        "rvol_mega_hit":   { "points": 12.0, "description": "RVOL >= 6.0x baseline (1-min bar relative volume)" },
-        "rvol_strong_hit": { "points":  8.0, "description": "RVOL >= 4.5x baseline" },
-        "rvol_standard":   { "points":  5.0, "description": "RVOL >= 3.0x baseline" }
+        "rvol_mega_hit": {
+          "points": 12.0,
+          "description": "RVOL >= 6.0x baseline (1-min bar relative volume)"
+        },
+        "rvol_strong_hit": {
+          "points": 8.0,
+          "description": "RVOL >= 4.5x baseline"
+        },
+        "rvol_standard": {
+          "points": 5.0,
+          "description": "RVOL >= 3.0x baseline"
+        }
       },
       "thresholds": {
-        "rvol_award_threshold": { "value": 3.0,   "description": "Minimum RVOL multiple to award any points" },
-        "rvol_hit_threshold":   { "value": 6.0,   "description": "RVOL multiple that triggers the hit banner" },
-        "dedup_sec":            { "value": 300,   "description": "Min seconds between awards on the same ticker" },
-        "iex_tape_share":       { "value": 0.025, "description": "Assumed IEX share of total US equity volume (for baseline scaling)" }
+        "rvol_award_threshold": {
+          "value": 3.0,
+          "description": "Minimum RVOL multiple to award any points"
+        },
+        "rvol_hit_threshold": {
+          "value": 6.0,
+          "description": "RVOL multiple that triggers the hit banner"
+        },
+        "dedup_sec": {
+          "value": 300,
+          "description": "Min seconds between awards on the same ticker"
+        },
+        "iex_tape_share": {
+          "value": 0.025,
+          "description": "Assumed IEX share of total US equity volume (for baseline scaling)"
+        }
       }
     },
     "options_unusual": {
       "label": "Unusual Options",
       "live_editable": false,
       "attributes": {
-        "mega_atm_call_buying":   { "points": 10.0, "description": "ATM call volume/OI >= 4.0" },
-        "unusual_atm_call_vol":   { "points":  6.0, "description": "ATM call volume/OI >= 2.0" },
-        "mega_atm_put_buying":    { "points":  4.0, "description": "ATM put volume/OI >= 4.0" },
-        "unusual_atm_put_vol":    { "points":  2.0, "description": "ATM put volume/OI >= 2.0" },
-        "bullish_flow_pc_ratio":  { "points":  4.0, "description": "Put/call ratio <= 0.30 on 5k+ contracts" },
-        "bearish_flow_pc_ratio":  { "points":  2.0, "description": "Put/call ratio >= 2.0 on 5k+ contracts" }
+        "mega_atm_call_buying": {
+          "points": 10.0,
+          "description": "ATM call volume/OI >= 4.0"
+        },
+        "unusual_atm_call_vol": {
+          "points": 6.0,
+          "description": "ATM call volume/OI >= 2.0"
+        },
+        "mega_atm_put_buying": {
+          "points": 4.0,
+          "description": "ATM put volume/OI >= 4.0"
+        },
+        "unusual_atm_put_vol": {
+          "points": 2.0,
+          "description": "ATM put volume/OI >= 2.0"
+        },
+        "bullish_flow_pc_ratio": {
+          "points": 4.0,
+          "description": "Put/call ratio <= 0.30 on 5k+ contracts"
+        },
+        "bearish_flow_pc_ratio": {
+          "points": 2.0,
+          "description": "Put/call ratio >= 2.0 on 5k+ contracts"
+        }
       }
     },
     "reg_sho": {
       "label": "Short Squeeze List",
       "live_editable": false,
       "attributes": {
-        "extreme_short_ratio":   { "points": 10.0, "description": "Daily short volume ratio >= 65% on 2M+ volume" },
-        "elevated_short_ratio":  { "points":  5.0, "description": "Daily short volume ratio >= 55% on 1M+ volume" },
-        "heavy_buying_pressure": { "points":  4.0, "description": "Daily short volume ratio <= 20% on 1M+ volume (buyers in control)" },
-        "short_ratio_spike":     { "points":  6.0, "description": "Short ratio jumped +18pp vs 20-day baseline" },
-        "short_ratio_collapse":  { "points":  3.0, "description": "Short ratio dropped -18pp vs baseline (covering wave)" },
-        "mega_short_print":      { "points":  4.0, "description": "20M+ short shares printed with >=40% ratio" }
+        "extreme_short_ratio": {
+          "points": 10.0,
+          "description": "Daily short volume ratio >= 65% on 2M+ volume"
+        },
+        "elevated_short_ratio": {
+          "points": 5.0,
+          "description": "Daily short volume ratio >= 55% on 1M+ volume"
+        },
+        "heavy_buying_pressure": {
+          "points": 4.0,
+          "description": "Daily short volume ratio <= 20% on 1M+ volume (buyers in control)"
+        },
+        "short_ratio_spike": {
+          "points": 6.0,
+          "description": "Short ratio jumped +18pp vs 20-day baseline"
+        },
+        "short_ratio_collapse": {
+          "points": 3.0,
+          "description": "Short ratio dropped -18pp vs baseline (covering wave)"
+        },
+        "mega_short_print": {
+          "points": 4.0,
+          "description": "20M+ short shares printed with >=40% ratio"
+        }
       }
     },
     "fundamentals_snap": {
       "label": "Fundamentals",
       "live_editable": true,
       "attributes": {
-        "low_float":              { "points": 10.0, "description": "Float in [10M, 50M] shares — standalone (no SI dependency)" },
-        "micro_float":            { "points": 12.0, "description": "Float < 10M shares — extreme float crunch" },
-        "mega_short_interest":    { "points": 12.0, "description": "Short interest as % of float >= 40%" },
-        "hot_short_interest":     { "points":  8.0, "description": "Short interest as % of float >= 30%" },
-        "elevated_short_interest":{ "points":  4.0, "description": "Short interest as % of float >= 20%" },
-        "days_to_cover_hot":      { "points":  6.0, "description": "Days-to-cover >= 12" },
-        "days_to_cover_notable":  { "points":  3.0, "description": "Days-to-cover >= 7" },
-        "si_jumped":              { "points":  5.0, "description": "SI%float jumped >= 30% vs prior snapshot" },
-        "si_covering_wave":       { "points":  3.0, "description": "SI%float dropped >= 30% vs prior snapshot" }
+        "low_float": {
+          "points": 10.0,
+          "description": "Float in [10M, 50M] shares \u2014 standalone (no SI dependency)"
+        },
+        "micro_float": {
+          "points": 12.0,
+          "description": "Float < 10M shares \u2014 extreme float crunch"
+        },
+        "mega_short_interest": {
+          "points": 12.0,
+          "description": "Short interest as % of float >= 40%"
+        },
+        "hot_short_interest": {
+          "points": 8.0,
+          "description": "Short interest as % of float >= 30%"
+        },
+        "elevated_short_interest": {
+          "points": 4.0,
+          "description": "Short interest as % of float >= 20%"
+        },
+        "days_to_cover_hot": {
+          "points": 6.0,
+          "description": "Days-to-cover >= 12"
+        },
+        "days_to_cover_notable": {
+          "points": 3.0,
+          "description": "Days-to-cover >= 7"
+        },
+        "si_jumped": {
+          "points": 5.0,
+          "description": "SI%float jumped >= 30% vs prior snapshot"
+        },
+        "si_covering_wave": {
+          "points": 3.0,
+          "description": "SI%float dropped >= 30% vs prior snapshot"
+        }
       }
     },
     "xbrl_facts": {
       "label": "Earnings (XBRL)",
       "live_editable": true,
       "attributes": {
-        "revenue_acceleration":   { "points": 10.0, "description": "Revenue YoY >= +30% (acceleration)" },
-        "revenue_growth":         { "points":  6.0, "description": "Revenue YoY >= +15%" },
-        "revenue_contraction":    { "points":  5.0, "description": "Revenue YoY <= -20% (notable contraction)" },
-        "xbrl_refresh_first_time":{ "points":  2.0, "description": "Fresh 10-Q/10-K with no prior-year comparable (information event)" },
-        "turned_profitable":      { "points":  3.0, "description": "Net income flipped loss -> profit YoY (bonus)" },
-        "ni_strong_growth":       { "points":  2.0, "description": "Net income YoY >= +50% (bonus)" }
+        "revenue_acceleration": {
+          "points": 10.0,
+          "description": "Revenue YoY >= +30% (acceleration)"
+        },
+        "revenue_growth": {
+          "points": 6.0,
+          "description": "Revenue YoY >= +15%"
+        },
+        "revenue_contraction": {
+          "points": 5.0,
+          "description": "Revenue YoY <= -20% (notable contraction)"
+        },
+        "xbrl_refresh_first_time": {
+          "points": 2.0,
+          "description": "Fresh 10-Q/10-K with no prior-year comparable (information event)"
+        },
+        "turned_profitable": {
+          "points": 3.0,
+          "description": "Net income flipped loss -> profit YoY (bonus)"
+        },
+        "ni_strong_growth": {
+          "points": 2.0,
+          "description": "Net income YoY >= +50% (bonus)"
+        }
+      }
+    },
+    "news_catalyst": {
+      "label": "News Catalyst",
+      "live_editable": true,
+      "attributes": {
+        "news_earnings_beat": {
+          "points": 3.0,
+          "description": "Quarterly results, EPS or revenue beat, guidance raise",
+          "status": "active"
+        },
+        "news_merger_acquisition": {
+          "points": 5.0,
+          "description": "M&A, takeover, buyout, definitive agreement to combine",
+          "status": "active"
+        },
+        "news_partnership_contract": {
+          "points": 3.0,
+          "description": "New customer contract, partnership, MOU, JV, distribution deal",
+          "status": "active"
+        },
+        "news_regulatory_fda": {
+          "points": 4.0,
+          "description": "FDA approval/clearance, CE mark, clinical-trial milestone, PDUFA, regulatory decision",
+          "status": "active"
+        },
+        "news_debt_restructuring": {
+          "points": 3.0,
+          "description": "Debt restructure, refinancing, tender offer, convertible cleanup, covenant waiver",
+          "status": "active"
+        },
+        "news_compliance_listing": {
+          "points": 2.0,
+          "description": "Regained Nasdaq/NYSE listing compliance, bid-price recovery, reverse split",
+          "status": "active"
+        },
+        "news_insider_filing": {
+          "points": 3.0,
+          "description": "Insider open-market purchase, 13D/13G filing, beneficial-ownership disclosure",
+          "status": "active"
+        },
+        "news_strategic_pivot": {
+          "points": 3.0,
+          "description": "Major strategy shift, new business segment, transformation, restructuring",
+          "status": "active"
+        },
+        "news_leadership_change": {
+          "points": 2.0,
+          "description": "CEO/CFO/board appointment or departure, activist involvement, cooperation agreement",
+          "status": "active"
+        },
+        "news_legal_litigation": {
+          "points": 4.0,
+          "description": "Lawsuit win, favorable ruling, settlement, patent verdict, court decision",
+          "status": "active"
+        },
+        "news_offering_capital": {
+          "points": 2.0,
+          "description": "Equity offering, capital raise, public offering, ATM, shelf registration, PIPE",
+          "status": "active"
+        },
+        "news_sector_macro": {
+          "points": 1.0,
+          "description": "Sector-wide event: commodity move, geopolitics, tariff, rate decision affecting the issuer's sector",
+          "status": "active"
+        },
+        "news_short_squeeze": {
+          "points": 2.0,
+          "description": "Short-interest spike/collapse, days-to-cover surge, borrow-fee move, squeeze chatter",
+          "status": "active"
+        },
+        "news_analyst_coverage": {
+          "points": 2.0,
+          "description": "Analyst initiation, upgrade, downgrade, price-target revision",
+          "status": "active"
+        },
+        "news_social_momentum": {
+          "points": 2.0,
+          "description": "Reddit/WSB/Stocktwits mention, viral retail interest, FOMO chatter",
+          "status": "active"
+        }
       }
     }
   }

@@ -284,6 +284,7 @@
   .chip.halt       { color:#f87171; border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.08); }
   .chip.fundamentals { color:#94a3b8; border-color:rgba(148,163,184,.35); background:rgba(148,163,184,.08); }
   .chip.rvol       { color:#4ade80; border-color:rgba(74,222,128,.35); background:rgba(74,222,128,.08); }
+  .chip.news       { color:#f472b6; border-color:rgba(244,114,182,.35); background:rgba(244,114,182,.08); }
   .row .reason {
     color: var(--muted);
     font-size: 11px;
@@ -340,6 +341,8 @@
   .row .tag.fundamentals { color:#94a3b8; border-color:rgba(148,163,184,.35); background:rgba(148,163,184,.08); }
   .row .tag.xbrl_facts   { color:#c4b5fd; border-color:rgba(196,181,253,.35); background:rgba(196,181,253,.08); }
   .row .tag.rvol         { color:#4ade80; border-color:rgba(74,222,128,.35); background:rgba(74,222,128,.08); }
+  .row .tag.news         { color:#f472b6; border-color:rgba(244,114,182,.35); background:rgba(244,114,182,.08); }
+  .row .tag.proposed     { border-style:dashed; opacity:.85; }
 
   /* Pulse-change inline banner (separate from 🎯 hit banner) */
   #regime-banner {
@@ -540,6 +543,7 @@ const URLS = {
   status:    "data/live/status.json",
   macro:     "data/live/market_pulse.json",
   streams:   "data/live/_stream_status.json",
+  weights:   "api/scan-weights",
 };
 
 let seenEventKeys = new Set();
@@ -563,6 +567,7 @@ const SCAN_REGISTRY = [
   { id: "reg_sho",           title: "Short Squeeze List", cron: "30 12 * * *",        label: "daily 12:30 UTC",       stale_min: 1500 },
   { id: "fundamentals_snap", title: "Fundamentals",       cron: "12-59/15 * * * *", label: "every 15 min (slice)", stale_min: 30   },
   { id: "xbrl_facts",        title: "Earnings (XBRL)",    cron: "0 14 * * *",         label: "daily 14:00 UTC",       stale_min: 1500 },
+  { id: "news_catalyst",     title: "News Catalysts",     cron: "3-59/10 * * * *",    label: "every 10 min",          stale_min: 30   },
 ];
 
 function renderScanStrip(runs, streams) {
@@ -738,8 +743,31 @@ function _scanChipClass(scan) {
   if (scan.startsWith("halt"))        return "halt";
   if (scan.startsWith("fundamentals")) return "fundamentals";
   if (scan.startsWith("rvol"))        return "rvol";
+  if (scan.startsWith("news_catalyst")) return "news";
   return "";
 }
+
+// Set of attribute keys (e.g. "news_crypto_treasury_adoption") whose
+// scan_weights.json entry has status === "proposed". Updated by
+// ``refreshProposedKeys()`` on page load and whenever the daemon emits
+// a ``weights`` SSE event. Marquee tags whose key is in this set get an
+// extra ``proposed`` CSS class (dashed border) so the operator can spot
+// Gemini-invented categories before they triage them in the Attributes tab.
+const _proposedKeys = new Set();
+async function refreshProposedKeys() {
+  try {
+    const r = await fetch(URLS.weights, { cache: "no-store" });
+    if (!r.ok) return;
+    const data = await r.json();
+    _proposedKeys.clear();
+    for (const [, scanBlob] of Object.entries(data.scans || {})) {
+      for (const [k, v] of Object.entries(scanBlob.attributes || {})) {
+        if (v && v.status === "proposed") _proposedKeys.add(k);
+      }
+    }
+  } catch (e) { /* network blip — try again next SSE tick */ }
+}
+refreshProposedKeys();
 function _sparkSVG(values) {
   if (!values || values.length < 2) {
     return '<svg class="spark" viewBox="0 0 60 16" preserveAspectRatio="none"></svg>';
@@ -781,9 +809,10 @@ function renderWatchlist(wl) {
     if (attrs.length) {
       tagItems = attrs.map(a => {
         const cls = _scanChipClass(a.scan || "");
+        const proposedCls = _proposedKeys.has(a.key) ? " proposed" : "";
         const label = (a.label || a.key || "").replace(/_/g, " ");
-        const title = `${a.scan || ""} · ${a.key || ""} · +${Number(a.points||0).toFixed(1)} pts`;
-        return `<span class="tag ${cls}" title="${title.replace(/"/g,'&quot;')}">${label}</span>`;
+        const title = `${a.scan || ""} · ${a.key || ""} · +${Number(a.points||0).toFixed(1)} pts${proposedCls ? " (proposed — triage in Attributes tab)" : ""}`;
+        return `<span class="tag ${cls}${proposedCls}" title="${title.replace(/"/g,'&quot;')}">${label}</span>`;
       });
     } else {
       const cls = _scanChipClass(r.last_scan || "");
@@ -996,6 +1025,10 @@ function connectSSE() {
 
   es.addEventListener("data", (ev) => {
     pollSoon();
+  });
+
+  es.addEventListener("weights", (ev) => {
+    refreshProposedKeys();
   });
 
   es.addEventListener("error", () => {

@@ -26,6 +26,7 @@ SCANS = {
     "options_unusual": "research.scans.options_unusual",
     "material_8k": "research.scans.material_8k",
     "fundamentals_snap": "research.scans.fundamentals_snap",
+    "news_catalyst": "research.scans.news_catalyst",
     # add new scans here as they're built
 }
 

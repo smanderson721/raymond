@@ -239,6 +239,7 @@ SCHEDULES: list[Scan] = [
     Scan("halt_tape",         "research.scans.halt_tape",         market_hours_every_n_min(2),               "NASDAQ trading halts"),
     Scan("fundamentals_snap", "research.scans.fundamentals_snap", every_n_minutes(15, offset=12),           "broad-universe fundamentals slice (~400/run, full cycle ~3.5h)"),
     Scan("xbrl_facts",       "research.scans.xbrl_facts",       daily_at(14, 0),                           "EDGAR 10-Q/10-K XBRL refresh"),
+    Scan("news_catalyst",   "research.scans.news_catalyst",   every_n_minutes(10, offset=3),             "Alpaca News + Gemini catalyst classifier"),
     # macro_econ folded into market_pulse on 2026-05-29
 ]
 
@@ -514,6 +515,84 @@ async def handle_put_weights(request: web.Request) -> web.Response:
     return web.json_response(fresh, headers={"Cache-Control": "no-store"})
 
 
+async def handle_catalyst_action(request: web.Request) -> web.Response:
+    """Triage a proposed news catalyst.
+
+    Body: ``{ "action": "accept"|"reject"|"rename",
+              "scan_id": "news_catalyst",
+              "attr_key": "news_xxx",
+              "new_key":  "news_yyy"   (rename only, optional),
+              "new_points": 3.0          (accept/rename only, optional) }``
+
+    - **accept**: flips ``status`` to ``active`` and optionally updates points.
+    - **reject**: flips ``status`` to ``rejected`` and zeroes points; the
+      key is kept so the LLM doesn't re-propose it.
+    - **rename**: copies the attribute under ``new_key`` (preserving the
+      original points & description unless ``new_points`` is given) and
+      removes the old key. The old key is also recorded in a sibling
+      ``aliases`` list so historical tag references resolve.
+    """
+    from research.scan_weights import all_weights, write_weights
+    try:
+        payload = await request.json()
+    except Exception as e:
+        return web.json_response({"error": f"bad json: {e}"}, status=400)
+
+    action = (payload.get("action") or "").lower()
+    scan_id = payload.get("scan_id") or "news_catalyst"
+    attr_key = payload.get("attr_key") or ""
+    if action not in ("accept", "reject", "rename"):
+        return web.json_response({"error": "action must be accept|reject|rename"}, status=400)
+    if not attr_key:
+        return web.json_response({"error": "attr_key required"}, status=400)
+
+    data = all_weights() or {"scans": {}}
+    scan_block = ((data.get("scans") or {}).get(scan_id) or {})
+    attrs = scan_block.get("attributes") or {}
+    if attr_key not in attrs:
+        return web.json_response({"error": f"unknown attr_key {attr_key!r}"}, status=404)
+
+    if action == "accept":
+        attrs[attr_key]["status"] = "active"
+        if "new_points" in payload:
+            try:
+                attrs[attr_key]["points"] = float(payload["new_points"])
+            except (TypeError, ValueError):
+                return web.json_response({"error": "new_points not numeric"}, status=400)
+    elif action == "reject":
+        attrs[attr_key]["status"] = "rejected"
+        attrs[attr_key]["points"] = 0.0
+    elif action == "rename":
+        new_key = (payload.get("new_key") or "").strip()
+        if not new_key:
+            return web.json_response({"error": "new_key required for rename"}, status=400)
+        # sanitize new key
+        import re as _re
+        new_key = _re.sub(r"[^a-z0-9_]", "_", new_key.lower())[:60]
+        if not new_key.startswith("news_"):
+            new_key = f"news_{new_key}"
+        if new_key in attrs and new_key != attr_key:
+            return web.json_response({"error": f"{new_key} already exists"}, status=409)
+        moved = dict(attrs[attr_key])
+        moved["status"] = "active"
+        if "new_points" in payload:
+            try:
+                moved["points"] = float(payload["new_points"])
+            except (TypeError, ValueError):
+                return web.json_response({"error": "new_points not numeric"}, status=400)
+        aliases = list(moved.get("aliases") or [])
+        if attr_key not in aliases:
+            aliases.append(attr_key)
+        moved["aliases"] = aliases
+        attrs[new_key] = moved
+        del attrs[attr_key]
+
+    fresh = write_weights(data)
+    log.info("catalyst-action %s on %s.%s", action, scan_id, attr_key)
+    await bus.publish("weights", {"updated_at": fresh.get("_meta", {}).get("updated_at")})
+    return web.json_response(fresh, headers={"Cache-Control": "no-store"})
+
+
 @web.middleware
 async def cors_middleware(request: web.Request, handler):
     """Permissive CORS for the dashboard + the cross-origin Attributes editor
@@ -544,6 +623,7 @@ def build_app() -> web.Application:
     app.router.add_post("/api/run/{name}", handle_manual_run)
     app.router.add_get("/api/scan-weights", handle_get_weights)
     app.router.add_put("/api/scan-weights", handle_put_weights)
+    app.router.add_post("/api/catalyst-action", handle_catalyst_action)
     app.router.add_get("/data/live/{name}", handle_live_file)
     # Also serve other static repo files (favicon etc.) on demand
     return app
