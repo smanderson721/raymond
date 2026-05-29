@@ -300,9 +300,15 @@ def _fetch_alpaca_news(start: datetime, end: datetime,
     headers = _alpaca_headers()
     if not headers:
         return []
+    # Alpaca wants strict RFC3339 with Z suffix. Force UTC + Z so callers
+    # passing naive datetimes (e.g. ad-hoc test scripts) don't 400.
+    def _fmt(d):
+        if d.tzinfo is None:
+            d = d.replace(tzinfo=timezone.utc)
+        return d.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     params = {
-        "start": start.isoformat(timespec="seconds").replace("+00:00", "Z"),
-        "end":   end.isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "start": _fmt(start),
+        "end":   _fmt(end),
         "limit": "50",
         "sort":  "desc",
         "include_content":      "true",
