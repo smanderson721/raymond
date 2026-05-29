@@ -24,14 +24,13 @@ Responsibilities
 
 Scans currently driven by this daemon
 -------------------------------------
-    macro_regime         every 15 min
+    market_pulse         daily 12:00 UTC (consolidated macro health)
     tech_slice           every 15 min, :07 offset
     reg_sho              daily 12:30 UTC
     insider_cluster      every 3h at :20
     options_unusual      every 30 min during 14:00–20:30 UTC weekdays
     material_8k          every 2h at :05
-    fundamentals_snap    daily 13:15 UTC
-    macro_econ           13:20, 17:20, 22:20 UTC daily
+    fundamentals_snap    every 15 min, :12 offset (broad universe slice)
 
 The schedule list lives in `SCHEDULES` below — adjust freely.
 
@@ -230,7 +229,7 @@ class Scan:
 
 
 SCHEDULES: list[Scan] = [
-    Scan("macro_regime",      "research.scans.macro_regime",      every_n_minutes(15),                       "env scan"),
+    Scan("market_pulse",     "research.scans.market_pulse",     daily_at(12, 0),                           "consolidated macro health (daily)"),
     Scan("tech_slice",        "research.scans.tech_slice",        every_n_minutes(15, offset=7),             "rolling 400 tickers"),
     Scan("reg_sho",           "research.scans.reg_sho",           daily_at(12, 30),                          "FINRA Reg SHO daily"),
     Scan("insider_cluster",   "research.scans.insider_cluster",   every_3h_at_minute(20),                    "EDGAR Form 4 cluster"),
@@ -240,7 +239,7 @@ SCHEDULES: list[Scan] = [
     Scan("halt_tape",         "research.scans.halt_tape",         market_hours_every_n_min(2),               "NASDAQ trading halts"),
     Scan("fundamentals_snap", "research.scans.fundamentals_snap", every_n_minutes(15, offset=12),           "broad-universe fundamentals slice (~400/run, full cycle ~3.5h)"),
     Scan("xbrl_facts",       "research.scans.xbrl_facts",       daily_at(14, 0),                           "EDGAR 10-Q/10-K XBRL refresh"),
-    Scan("macro_econ",        "research.scans.macro_econ",        daily_at_multi([(13, 20), (17, 20), (22, 20)]), "FRED macro series"),
+    # macro_econ folded into market_pulse on 2026-05-29
 ]
 
 SCANS: dict[str, Scan] = {s.name: s for s in SCHEDULES}

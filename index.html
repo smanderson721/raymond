@@ -58,18 +58,55 @@
     letter-spacing: 0.5px;
   }
   .brand .sub { color: var(--muted); font-size: 11px; }
-  .regime {
-    padding: 4px 12px;
-    border-radius: 12px;
-    font: 600 11px/1.4 -apple-system, sans-serif;
+  /* ── Market Pulse banner (weather + flanking tags) ── */
+  #pulse-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 12px;
+  }
+  #pulse-bar .pulse-tags {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    justify-content: flex-end;
+    flex: 1 1 0; min-width: 0;
+  }
+  #pulse-bar .pulse-tags.right { justify-content: flex-start; }
+  #pulse-bar .pulse-tag {
+    font: 600 10px/1.4 ui-monospace, monospace;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
+    letter-spacing: 0.4px;
+    padding: 3px 8px;
+    border-radius: 999px;
     background: var(--panel2);
     border: 1px solid var(--border);
+    color: var(--muted);
+    white-space: nowrap;
   }
-  .regime.risk_on, .regime.constructive { color: var(--green); border-color: var(--green-dim); }
-  .regime.risk_off, .regime.defensive   { color: var(--red);   border-color: var(--red-dim); }
-  .regime.neutral                       { color: var(--muted); }
+  #pulse-center {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 6px 14px;
+    border-radius: 12px;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    min-width: 170px;
+  }
+  #pulse-center .pulse-label {
+    font: 700 13px/1.1 -apple-system, sans-serif;
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  #pulse-center .pulse-score {
+    font: 500 10px/1.2 ui-monospace, monospace;
+    color: var(--muted); margin-top: 2px;
+  }
+  /* weather palette */
+  #pulse-center.clear    { color:#4ade80; border-color: rgba(74,222,128,.45); background: rgba(74,222,128,.08); }
+  #pulse-center.fair     { color:#a3e635; border-color: rgba(163,230,53,.40); background: rgba(163,230,53,.06); }
+  #pulse-center.overcast { color:#94a3b8; border-color: rgba(148,163,184,.35); background: rgba(148,163,184,.06); }
+  #pulse-center.stormy   { color:#fbbf24; border-color: rgba(251,191,36,.45); background: rgba(251,191,36,.08); }
+  #pulse-center.severe   { color:#f87171; border-color: rgba(248,113,113,.55); background: rgba(248,113,113,.10); }
   .clock { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 
   /* ── Banner (hit) ───────────────────────────────── */
@@ -150,7 +187,7 @@
   .ev .ts  { color: var(--dim); font-size: 11px; font-variant-numeric: tabular-nums; }
   .ev .msg { color: var(--text); white-space: pre; overflow: hidden; text-overflow: ellipsis; }
   /* per-scan color (border + message tint). Applied via data-scan attribute. */
-  .ev[data-scan="macro_regime"]      { border-left-color:#facc15; } .ev[data-scan="macro_regime"]      .msg { color:#facc15; }
+  .ev[data-scan="market_pulse"]      { border-left-color:#facc15; } .ev[data-scan="market_pulse"]      .msg { color:#facc15; }
   .ev[data-scan="tech_slice"]        { border-left-color:#7dd3fc; } .ev[data-scan="tech_slice"]        .msg { color:#cfe9ff; }
   .ev[data-scan="insider_cluster"]   { border-left-color:#a78bfa; } .ev[data-scan="insider_cluster"]   .msg { color:#d8caff; }
   .ev[data-scan="material_8k"]       { border-left-color:#34d399; } .ev[data-scan="material_8k"]       .msg { color:#bff0d8; }
@@ -161,7 +198,6 @@
   .ev[data-scan="reg_sho"]           { border-left-color:#fb7185; } .ev[data-scan="reg_sho"]           .msg { color:#ffc7d1; }
   .ev[data-scan="fundamentals_snap"] { border-left-color:#94a3b8; } .ev[data-scan="fundamentals_snap"] .msg { color:#cbd5e1; }
   .ev[data-scan="xbrl_facts"]        { border-left-color:#e879f9; } .ev[data-scan="xbrl_facts"]        .msg { color:#f4c8fc; }
-  .ev[data-scan="macro_econ"]        { border-left-color:#fde047; } .ev[data-scan="macro_econ"]        .msg { color:#fdf3a5; }
   /* notable/hit override the per-scan tint */
   .ev.notable {
     background: rgba(255, 210, 63, 0.06);
@@ -240,7 +276,6 @@
   }
   .chip.tech       { color:#7dd3fc; border-color:rgba(125,211,252,.35); background:rgba(125,211,252,.08); }
   .chip.macro      { color:#facc15; border-color:rgba(250,204,21,.35); background:rgba(250,204,21,.08); }
-  .chip.macro_econ { color:#facc15; border-color:rgba(250,204,21,.35); background:rgba(250,204,21,.08); }
   .chip.insider    { color:#a78bfa; border-color:rgba(167,139,250,.35); background:rgba(167,139,250,.08); }
   .chip.options    { color:#fb923c; border-color:rgba(251,146,60,.35); background:rgba(251,146,60,.08); }
   .chip.reg_sho    { color:#fb7185; border-color:rgba(251,113,133,.35); background:rgba(251,113,133,.08); }
@@ -296,7 +331,6 @@
   }
   .row .tag.tech         { color:#7dd3fc; border-color:rgba(125,211,252,.35); background:rgba(125,211,252,.08); }
   .row .tag.macro        { color:#facc15; border-color:rgba(250,204,21,.35); background:rgba(250,204,21,.08); }
-  .row .tag.macro_econ   { color:#facc15; border-color:rgba(250,204,21,.35); background:rgba(250,204,21,.08); }
   .row .tag.insider      { color:#a78bfa; border-color:rgba(167,139,250,.35); background:rgba(167,139,250,.08); }
   .row .tag.options      { color:#fb923c; border-color:rgba(251,146,60,.35); background:rgba(251,146,60,.08); }
   .row .tag.reg_sho      { color:#fb7185; border-color:rgba(251,113,133,.35); background:rgba(251,113,133,.08); }
@@ -307,7 +341,7 @@
   .row .tag.xbrl_facts   { color:#c4b5fd; border-color:rgba(196,181,253,.35); background:rgba(196,181,253,.08); }
   .row .tag.rvol         { color:#4ade80; border-color:rgba(74,222,128,.35); background:rgba(74,222,128,.08); }
 
-  /* Regime-change inline banner (separate from 🎯 hit banner) */
+  /* Pulse-change inline banner (separate from 🎯 hit banner) */
   #regime-banner {
     position: fixed;
     top: 56px;
@@ -327,9 +361,9 @@
     z-index: 50;
   }
   #regime-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  #regime-banner.risk_on, #regime-banner.constructive { color: var(--green); border-color: var(--green); }
-  #regime-banner.risk_off, #regime-banner.defensive   { color: var(--red);   border-color: var(--red); }
-  #regime-banner.neutral { color: var(--muted); border-color: var(--border); }
+  #regime-banner.clear, #regime-banner.fair       { color: var(--green); border-color: var(--green); }
+  #regime-banner.stormy, #regime-banner.severe    { color: var(--red);   border-color: var(--red); }
+  #regime-banner.overcast                         { color: var(--muted); border-color: var(--border); }
 
   /* ── Footer ─────────────────────────────────────── */
   footer {
@@ -406,7 +440,7 @@
   .scan-tile.err     { border-left-color: var(--red); background: var(--red-dim); }
   .scan-tile.pending { border-left-color: var(--dim); opacity: 0.7; }
   /* per-scan accent ribbon (overrides health border when tile is ok) */
-  .scan-tile.ok.scan-macro_regime      { border-left-color:#facc15; }
+  .scan-tile.ok.scan-market_pulse      { border-left-color:#facc15; }
   .scan-tile.ok.scan-tech_slice        { border-left-color:#7dd3fc; }
   .scan-tile.ok.scan-insider_cluster   { border-left-color:#a78bfa; }
   .scan-tile.ok.scan-material_8k       { border-left-color:#34d399; }
@@ -417,7 +451,6 @@
   .scan-tile.ok.scan-reg_sho           { border-left-color:#fb7185; }
   .scan-tile.ok.scan-fundamentals_snap { border-left-color:#94a3b8; }
   .scan-tile.ok.scan-xbrl_facts        { border-left-color:#e879f9; }
-  .scan-tile.ok.scan-macro_econ        { border-left-color:#fde047; }
   .scan-tile.recent::after {
     content: "";
     position: absolute;
@@ -438,7 +471,14 @@
       <div class="sub">live market scan · 24/7</div>
     </div>
   </div>
-  <div class="regime neutral" id="regime">REGIME · loading</div>
+  <div id="pulse-bar">
+    <div class="pulse-tags left"  id="pulse-tags-left"></div>
+    <div id="pulse-center" class="overcast">
+      <div class="pulse-label" id="pulse-label">PULSE · loading</div>
+      <div class="pulse-score" id="pulse-score">— / 100  ·  ×1.00</div>
+    </div>
+    <div class="pulse-tags right" id="pulse-tags-right"></div>
+  </div>
   <div class="clock" id="clock">—</div>
 </header>
 
@@ -498,7 +538,7 @@ const URLS = {
   watchlist: "data/live/watchlist.json",
   hits:      "data/live/hits.json",
   status:    "data/live/status.json",
-  macro:     "data/live/macro_state.json",
+  macro:     "data/live/market_pulse.json",
   streams:   "data/live/_stream_status.json",
 };
 
@@ -512,7 +552,7 @@ let firstLoad = true;
 // Cron schedules mirror .github/workflows/live-scans.yml. Update both.
 // "stale_min" = minutes after which a scan is considered overdue.
 const SCAN_REGISTRY = [
-  { id: "macro_regime",      title: "Macro Regime",       cron: "*/15 * * * *",       label: "every 15 min",          stale_min: 30   },
+  { id: "market_pulse",      title: "Market Pulse",       cron: "0 12 * * *",         label: "daily 12:00 UTC",       stale_min: 1500 },
   { id: "tech_slice",        title: "Technical",          cron: "7-59/15 * * * *",    label: "every 15 min (+7)",     stale_min: 30   },
   { id: "insider_cluster",   title: "Insider Buying",     cron: "20 */3 * * *",       label: "every 3 hr",            stale_min: 240  },
   { id: "material_8k",       title: "8-K Material",       cron: "5 */2 * * *",        label: "every 2 hr",            stale_min: 180  },
@@ -523,7 +563,6 @@ const SCAN_REGISTRY = [
   { id: "reg_sho",           title: "Short Squeeze List", cron: "30 12 * * *",        label: "daily 12:30 UTC",       stale_min: 1500 },
   { id: "fundamentals_snap", title: "Fundamentals",       cron: "12-59/15 * * * *", label: "every 15 min (slice)", stale_min: 30   },
   { id: "xbrl_facts",        title: "Earnings (XBRL)",    cron: "0 14 * * *",         label: "daily 14:00 UTC",       stale_min: 1500 },
-  { id: "macro_econ",        title: "Macro Econ",         cron: "20 13,17,22 * * *",  label: "3× daily UTC",          stale_min: 800  },
 ];
 
 function renderScanStrip(runs, streams) {
@@ -669,18 +708,18 @@ function playHitChime() {
   osc.stop(t + 0.25);
 }
 
-// ── regime-change inline banner ──
-let _prevRegime = null;
-function showRegimeBanner(prev, next, mult) {
+// ── pulse-change inline banner ──
+let _prevPulseLabel = null;
+function showPulseBanner(prev, next, mult, labelKey) {
   const b = document.getElementById("regime-banner");
   if (!b) return;
   const arrow = prev ? `${prev.toUpperCase()} → ${next.toUpperCase()}` : next.toUpperCase();
-  b.textContent = `REGIME · ${arrow} · ×${mult}`;
-  b.className = ""; b.classList.add(next);
+  b.textContent = `MARKET PULSE · ${arrow} · ×${mult}`;
+  b.className = ""; b.classList.add(labelKey);
   void b.offsetWidth;
   b.classList.add("show");
-  clearTimeout(showRegimeBanner._t);
-  showRegimeBanner._t = setTimeout(() => b.classList.remove("show"), 6000);
+  clearTimeout(showPulseBanner._t);
+  showPulseBanner._t = setTimeout(() => b.classList.remove("show"), 6000);
 }
 
 // ── sparkline state ──
@@ -689,7 +728,7 @@ const sparkData = new Map(); // ticker → [score, ...]
 function _scanChipClass(scan) {
   if (!scan) return "";
   if (scan.startsWith("tech"))        return "tech";
-  if (scan.startsWith("macro_econ"))  return "macro_econ";
+  if (scan.startsWith("market_pulse")) return "macro";
   if (scan.startsWith("macro"))       return "macro";
   if (scan.startsWith("insider"))     return "insider";
   if (scan.startsWith("options"))     return "options";
@@ -855,17 +894,25 @@ async function poll() {
     document.getElementById("f-hits").textContent = hits.hits.length;
   }
 
-  if (macro && macro.regime) {
-    const r = document.getElementById("regime");
-    r.textContent = `REGIME · ${macro.regime.toUpperCase()} · ×${macro.multiplier}`;
-    r.className = "regime " + macro.regime;
+  if (macro && macro.label_key) {
+    const center = document.getElementById("pulse-center");
+    const lbl    = document.getElementById("pulse-label");
+    const sc     = document.getElementById("pulse-score");
+    const lt     = document.getElementById("pulse-tags-left");
+    const rt     = document.getElementById("pulse-tags-right");
+    center.className = macro.label_key;
+    lbl.textContent  = macro.label || macro.label_key;
+    sc.textContent   = `${(macro.health_score ?? 0).toFixed(0)} / 100  ·  ×${macro.multiplier}`;
+    const tagHtml = t => `<span class="pulse-tag">${t}</span>`;
+    lt.innerHTML = (macro.left_tags  || []).map(tagHtml).join("");
+    rt.innerHTML = (macro.right_tags || []).map(tagHtml).join("");
     document.getElementById("f-macro").textContent =
-      `${macro.regime} (VIX ${macro.vix_level ?? "—"})`;
-    if (_prevRegime !== null && _prevRegime !== macro.regime) {
-      showRegimeBanner(_prevRegime, macro.regime, macro.multiplier);
+      `${macro.label || macro.label_key} · ${(macro.health_score ?? 0).toFixed(0)}/100 (VIX ${macro.vix_level ?? "—"})`;
+    if (_prevPulseLabel !== null && _prevPulseLabel !== macro.label_key) {
+      showPulseBanner(_prevPulseLabel, macro.label_key, macro.multiplier, macro.label_key);
       playHitChime();
     }
-    _prevRegime = macro.regime;
+    _prevPulseLabel = macro.label_key;
   }
 
   if (status && Array.isArray(status.runs)) {

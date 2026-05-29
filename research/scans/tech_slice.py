@@ -260,7 +260,11 @@ def _evaluate(tk: str, f: dict, mult: float) -> list[tuple[float, str, str]]:
 # ─── runner ──────────────────────────────────────────────────────────
 
 def _macro_multiplier() -> float:
-    state = _read(os.path.join(LIVE_DIR, "macro_state.json"), {})
+    # Prefer the new consolidated market_pulse.json; fall back to the
+    # legacy macro_state.json for backward compatibility during rollout.
+    state = _read(os.path.join(LIVE_DIR, "market_pulse.json"), None)
+    if not state:
+        state = _read(os.path.join(LIVE_DIR, "macro_state.json"), {})
     return float(state.get("multiplier", 1.0))
 
 

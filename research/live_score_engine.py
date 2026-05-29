@@ -137,7 +137,7 @@ class Session:
     """One scan-run session. Accumulates events and score deltas, flushes on
     ``close()``. Always use as a context manager:
 
-        with Session("macro_regime") as s:
+        with Session("market_pulse") as s:
             s.log("scanning VIX…")
             s.award("AAPL", 3, "rsi cross 50")
     """
