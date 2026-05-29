@@ -205,22 +205,19 @@
 
 <div style="margin:0 0 1rem;padding:0.8rem 1rem;background:#1a1d23;border-left:3px solid #facc15;border-radius:4px">
   <strong style="color:#facc15">How to read "top-N watchlist" in the Universe column.</strong>
-  Several scans (<code>fundamentals_snap</code>,
-  <code>options_unusual</code>, <code>rvol_stream</code>) only
-  examine the <em>top-N tickers from</em> <code>watchlist.json</code>,
-  which is itself a derived ranking of every ticker that has scored
-  points from <em>any other</em> scan, decayed with a 12-hour
-  half-life. It is <strong>not a pre-curated list and not a scan of
-  all ~6000 tickers</strong>. So these top-N scans are downstream of
-  whatever the upstream signal-discovery scans
-  (<code>tech_slice</code>, <code>insider_cluster</code>,
-  <code>material_8k</code>, <code>sc_13dg</code>, <code>halt_tape</code>,
-  <code>xbrl_facts</code>, <code>reg_sho</code>) have already surfaced
-  — a deliberate closed loop that respects API rate limits (Finnhub
-  55 req/min, Alpaca IEX 30 symbol subscriptions, yfinance ~2 s/ticker).
-  If a stock has never scored from any of those upstream scans, it will
-  never receive a fundamentals snapshot, an unusual-options check, or
-  an RVOL subscription.
+  Two scans still examine only the top-N tickers from
+  <code>watchlist.json</code> (itself a derived ranking of every ticker
+  that has scored points from <em>any other</em> scan, decayed with a
+  12-hour half-life): <code>options_unusual</code> (top-60, yfinance
+  ~2 s/ticker) and the <code>rvol_stream</code> daemon (top-25, Alpaca
+  IEX websocket capped at 30 symbols). For these two, if a stock has
+  never scored from any upstream scan, it will never receive an
+  unusual-options check or an intraday-RVOL subscription — a
+  deliberate closed loop that respects rate limits and connection
+  caps. <strong>The Fundamentals scan was moved upstream</strong> on
+  2026-05-28 and now slices the full universe; <strong>broad-universe
+  daily RVOL</strong> is now detected inside <code>tech_slice</code>
+  alongside its setup patterns.
 </div>
 
 <table>
@@ -252,8 +249,13 @@
       in <strong>slices of 400</strong> (cursor at <code>_slice_cursor.json</code>),
       covering the whole universe every ~15 runs (~4 hrs). Per slice: pulls
       6 months of OHLCV, computes RSI / MACD / SMA-stack / 52-wk hi-lo /
-      volume ratios in pandas, awards on setup patterns (cup-with-handle,
-      breakout retest, oversold bounce, MACD cross, etc.).</td>
+      volume ratios in pandas, awards on setup patterns (breakout on
+      volume, squeeze release, pullback-to-SMA50 RSI cross, coil-in-
+      uptrend, clean momentum), and tags <strong>daily relative volume</strong>
+      tiers (mega ≥5×, strong ≥3×, notable ≥2× vs 20-day average).
+      This is the broad-universe RVOL discovery channel; the
+      <code>rvol_stream</code> daemon then provides the intraday booster
+      on whatever surfaces in the top watchlist.</td>
   </tr>
   <tr>
     <td><strong>Insider Buying</strong><br><code>insider_cluster</code></td>
@@ -338,12 +340,18 @@
   </tr>
   <tr>
     <td><strong>Fundamentals</strong><br><code>fundamentals_snap</code></td>
-    <td>daily 13:15 UTC</td>
-    <td><strong>top-120 watchlist</strong> (<code>SCAN_TOP_N</code>)<br><span class="muted">Finnhub rate-limited to 55 req/min</span></td>
-    <td>yfinance bulk fundamentals</td>
-    <td>Nightly snapshot of float, short interest %, days-to-cover,
-      insider %, institutional %, market cap, sector. Powers the
-      "structural score" half of BUP++ and provides watchlist context.</td>
+    <td>every 15 min (:12)</td>
+    <td><strong>400 / run</strong> out of ~5,760<br><span class="muted">rotating slice (cursor in <code>_fundamentals_cursor.json</code>); full sweep in ~15 runs (~3.5 hrs)</span></td>
+    <td>Finnhub <code>/stock/metric</code> (55 req/min)</td>
+    <td>Rolls through the <strong>full precondition universe</strong> in
+      slices of 400, refreshing float, short interest, days-to-cover,
+      and shares-outstanding per ticker. Each ticker is awarded
+      <strong>independent attribute tags</strong> for low float
+      (10M–50M), micro float (&lt;10M), SI tiers (elevated / hot /
+      mega), DTC tiers, and SI deltas vs the prior snapshot. This is
+      now an <em>upstream discovery scan</em>, not a top-N refresh —
+      low-float and high-SI candidates surface here even when no other
+      scan has touched them yet.</td>
   </tr>
   <tr>
     <td><strong>Earnings (XBRL)</strong><br><code>xbrl_facts</code></td>

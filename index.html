@@ -521,7 +521,7 @@ const SCAN_REGISTRY = [
   { id: "rvol_stream",       title: "Live RVOL",          cron: "",                   label: "Alpaca IEX stream",     kind: "daemon" },
   { id: "options_unusual",   title: "Unusual Options",    cron: "*/30 14-20 * * 1-5", label: "every 30 min, mkt hrs", stale_min: 120  },
   { id: "reg_sho",           title: "Short Squeeze List", cron: "30 12 * * *",        label: "daily 12:30 UTC",       stale_min: 1500 },
-  { id: "fundamentals_snap", title: "Fundamentals",       cron: "15 13 * * *",        label: "daily 13:15 UTC",       stale_min: 1500 },
+  { id: "fundamentals_snap", title: "Fundamentals",       cron: "12-59/15 * * * *", label: "every 15 min (slice)", stale_min: 30   },
   { id: "xbrl_facts",        title: "Earnings (XBRL)",    cron: "0 14 * * *",         label: "daily 14:00 UTC",       stale_min: 1500 },
   { id: "macro_econ",        title: "Macro Econ",         cron: "20 13,17,22 * * *",  label: "3× daily UTC",          stale_min: 800  },
 ];

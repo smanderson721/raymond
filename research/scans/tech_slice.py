@@ -26,7 +26,9 @@ import pandas as pd
 import yfinance as yf
 
 from research.live_score_engine import Session, LIVE_DIR, _read, _write
+from research.scan_weights import weight
 
+SCAN_NAME = "tech_slice"
 CURSOR_FILE = os.path.join(LIVE_DIR, "_slice_cursor.json")
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SCAN_FILE = os.path.join(REPO_ROOT, "research_output", "scan_results.json")
@@ -116,6 +118,14 @@ def _features(df: pd.DataFrame) -> dict:
     v60_prior = float(v.iloc[-60:-5].mean()) if len(v) >= 60 else 0.0
     vol_ratio = (v5 / v60_prior) if v60_prior > 0 else None
 
+    # Daily RVOL: today's session volume vs prior 20-day average.
+    # This is the broad-universe relative-volume signal that lets us
+    # discover unusual volume on tickers that aren't yet on the watchlist
+    # (the Alpaca rvol_stream daemon only covers the top-25 watchlist).
+    today_vol = float(v.iloc[-1]) if len(v) >= 1 else 0.0
+    avg20_prior = float(v.iloc[-21:-1].mean()) if len(v) >= 21 else 0.0
+    rvol_daily = (today_vol / avg20_prior) if avg20_prior > 0 else None
+
     dollar_vol = price * (float(v.tail(20).mean()) if len(v) >= 20 else float(v.mean()))
 
     rsi = _rsi14(c)
@@ -152,6 +162,7 @@ def _features(df: pd.DataFrame) -> dict:
         "sma50": sma50,
         "high20": high20,
         "vol_ratio_5_60": vol_ratio,
+        "rvol_daily": rvol_daily,
         "dollar_vol": dollar_vol,
         "rsi14": rsi,
         "atr14_pct": atr_pct,
@@ -162,12 +173,15 @@ def _features(df: pd.DataFrame) -> dict:
 
 # ─── setup scoring ───────────────────────────────────────────────────
 
-def _evaluate(tk: str, f: dict, mult: float) -> list[tuple[float, str]]:
-    """Return list of (points, reason) for setups detected on this ticker.
+def _evaluate(tk: str, f: dict, mult: float) -> list[tuple[float, str, str]]:
+    """Return list of (points, reason, attr_key) for setups detected on
+    this ticker. ``attr_key`` is the scan_weights.json key, which the
+    engine uses to tag the ticker on the dashboard marquee.
 
-    Multiplier comes from macro_state.json so risk-off shaves all awards.
+    Multiplier comes from macro_state.json so risk-off shaves all
+    positive awards.
     """
-    out: list[tuple[float, str]] = []
+    out: list[tuple[float, str, str]] = []
 
     if not f or f.get("dollar_vol", 0) < 1_000_000:
         return out  # illiquid
@@ -179,46 +193,67 @@ def _evaluate(tk: str, f: dict, mult: float) -> list[tuple[float, str]]:
     rsi = f.get("rsi14") or 50
     atr_pct = f.get("atr14_pct") or 0.02
     vol_ratio = f.get("vol_ratio_5_60")
+    rvol_daily = f.get("rvol_daily")
     sma50 = f.get("sma50")
     high20 = f.get("high20")
     bb_squeeze = f.get("bb_squeeze")
 
     # 1) 20-day-high breakout on volume
     if high20 and price >= high20 * 0.999 and vol_ratio and vol_ratio > 1.5:
-        pts = 10 + min(8, (vol_ratio - 1.5) * 4)
-        out.append((pts, f"20d high break on {vol_ratio:.1f}× vol"))
+        base = weight(SCAN_NAME, "breakout_20d_high_vol", 10.0)
+        pts = base + min(8, (vol_ratio - 1.5) * 4)
+        out.append((pts, f"20d high break on {vol_ratio:.1f}× vol", "breakout_20d_high_vol"))
 
     # 2) Bollinger squeeze release with momentum
     if bb_squeeze and abs(pct_1d) > atr_pct * 1.2:
-        out.append((8, f"squeeze release ({pct_1d * 100:+.1f}%, ATR={atr_pct * 100:.1f}%)"))
+        pts = weight(SCAN_NAME, "squeeze_release_momentum", 8.0)
+        out.append((pts, f"squeeze release ({pct_1d * 100:+.1f}%, ATR={atr_pct * 100:.1f}%)", "squeeze_release_momentum"))
 
     # 3) uptrend pullback to SMA50 with bullish RSI cross
     if sma50 and abs(price - sma50) / sma50 < 0.02 and 45 <= rsi <= 55 and pct_20d > 0.02:
-        out.append((6, f"pullback to 50d, RSI {rsi:.0f}, +{pct_20d * 100:.1f}% 20d"))
+        pts = weight(SCAN_NAME, "pullback_sma50_rsi_cross", 6.0)
+        out.append((pts, f"pullback to 50d, RSI {rsi:.0f}, +{pct_20d * 100:.1f}% 20d", "pullback_sma50_rsi_cross"))
 
     # 4) strong stepped-up volume w/o blowoff
     if vol_ratio and vol_ratio > 2.0 and abs(pct_5d) < 0.20:
-        out.append((5, f"volume {vol_ratio:.1f}× without blowoff"))
+        pts = weight(SCAN_NAME, "stepped_volume_no_blowoff", 5.0)
+        out.append((pts, f"volume {vol_ratio:.1f}× without blowoff", "stepped_volume_no_blowoff"))
 
     # 5) coil: low ATR but in uptrend
     if atr_pct and atr_pct < 0.015 and sma50 and price > sma50 and pct_20d > 0:
-        out.append((4, f"coiling above 50d, ATR {atr_pct * 100:.2f}%"))
+        pts = weight(SCAN_NAME, "coiling_above_sma50", 4.0)
+        out.append((pts, f"coiling above 50d, ATR {atr_pct * 100:.2f}%", "coiling_above_sma50"))
 
     # 6) clean momentum, not yet extended
     if 55 <= rsi <= 68 and pct_5d > 0.03 and pct_20d > 0.05 and pct_20d < 0.30:
-        out.append((4, f"clean trend RSI {rsi:.0f}, {pct_20d * 100:+.1f}% 20d"))
+        pts = weight(SCAN_NAME, "clean_momentum_trend", 4.0)
+        out.append((pts, f"clean trend RSI {rsi:.0f}, {pct_20d * 100:+.1f}% 20d", "clean_momentum_trend"))
+
+    # 7-9) Daily RVOL tiers — broad-universe relative volume detection.
+    # rvol_stream (Alpaca IEX) only covers the top-25 watchlist; this is
+    # where rvol gets discovered on the other 5700+ tickers.
+    if rvol_daily and rvol_daily >= 5.0:
+        pts = weight(SCAN_NAME, "rvol_daily_mega", 12.0)
+        out.append((pts, f"daily RVOL {rvol_daily:.1f}× (mega volume vs 20d avg)", "rvol_daily_mega"))
+    elif rvol_daily and rvol_daily >= 3.0:
+        pts = weight(SCAN_NAME, "rvol_daily_strong", 8.0)
+        out.append((pts, f"daily RVOL {rvol_daily:.1f}× (strong volume vs 20d avg)", "rvol_daily_strong"))
+    elif rvol_daily and rvol_daily >= 2.0:
+        pts = weight(SCAN_NAME, "rvol_daily_notable", 5.0)
+        out.append((pts, f"daily RVOL {rvol_daily:.1f}× vs 20d avg", "rvol_daily_notable"))
 
     # Penalties — subtract points from clearly blown-up names
     if pct_5d > 0.30 or rsi > 80:
-        out.append((-6, f"overextended (RSI {rsi:.0f}, +{pct_5d * 100:.0f}% 5d)"))
+        pts = weight(SCAN_NAME, "overextended_penalty", -6.0)
+        out.append((pts, f"overextended (RSI {rsi:.0f}, +{pct_5d * 100:.0f}% 5d)", "overextended_penalty"))
 
     # Apply macro multiplier to positive awards only
     scaled = []
-    for pts, reason in out:
+    for pts, reason, attr_key in out:
         if pts > 0:
-            scaled.append((round(pts * mult, 2), reason))
+            scaled.append((round(pts * mult, 2), reason, attr_key))
         else:
-            scaled.append((round(pts, 2), reason))
+            scaled.append((round(pts, 2), reason, attr_key))
     return scaled
 
 
@@ -289,8 +324,8 @@ def run() -> dict:
                 if not f:
                     continue
                 hits = _evaluate(tk, f, mult)
-                for pts, reason in hits:
-                    s.award(tk, pts, reason)
+                for pts, reason, attr_key in hits:
+                    s.award(tk, pts, reason, attr_key=attr_key)
                     awards += 1
 
         s.log(f"slice done — ok={ok} fail={fail} awards={awards}")

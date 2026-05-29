@@ -1,7 +1,7 @@
 {
   "_meta": {
     "description": "Per-scan attribute reward catalog. Edited via the Attributes subtab in pitches.html or directly here. Hot-reloaded by scans on file mtime change; no restart needed.",
-    "updated_at": "2026-05-28T00:00:00Z",
+    "updated_at": "2026-05-28T18:00:00Z",
     "engine": {
       "half_life_hours": 12.0,
       "hit_threshold": 12.0
@@ -26,15 +26,18 @@
     },
     "tech_slice": {
       "label": "Technical",
-      "live_editable": false,
+      "live_editable": true,
       "attributes": {
-        "breakout_20d_high_vol":     { "points": 10.0, "description": "20-day high break on >=1.5x volume (scales up to +8 with volume ratio)" },
+        "breakout_20d_high_vol":     { "points": 10.0, "description": "20-day high break on >=1.5x volume (base; scales up to +8 with volume ratio)" },
         "squeeze_release_momentum":  { "points":  8.0, "description": "Bollinger squeeze release with directional momentum" },
         "pullback_sma50_rsi_cross":  { "points":  6.0, "description": "Pullback to SMA50 with RSI cross through 45-55 in uptrend" },
-        "stepped_volume_no_blowoff": { "points":  5.0, "description": "Volume >=2.0x without extreme intraday move" },
+        "stepped_volume_no_blowoff": { "points":  5.0, "description": "5d-avg volume >=2.0x 60d prior without extreme intraday move" },
         "coiling_above_sma50":       { "points":  4.0, "description": "ATR < 1.5% but holding above SMA50 in uptrend" },
         "clean_momentum_trend":      { "points":  4.0, "description": "RSI 55-68, +3% 5d, +5-30% 20d" },
-        "overextended_penalty":      { "points": -6.0, "description": "RSI > 80 or +30% in last 5 days" }
+        "rvol_daily_mega":           { "points": 12.0, "description": "Today's session volume >=5x the 20-day average (broad-universe RVOL)" },
+        "rvol_daily_strong":         { "points":  8.0, "description": "Today's session volume >=3x the 20-day average" },
+        "rvol_daily_notable":        { "points":  5.0, "description": "Today's session volume >=2x the 20-day average" },
+        "overextended_penalty":      { "points": -6.0, "description": "RSI > 80 or +30% in last 5 days (negative)" }
       }
     },
     "insider_cluster": {
@@ -128,16 +131,17 @@
     },
     "fundamentals_snap": {
       "label": "Fundamentals",
-      "live_editable": false,
+      "live_editable": true,
       "attributes": {
+        "low_float":              { "points": 10.0, "description": "Float in [10M, 50M] shares — standalone (no SI dependency)" },
+        "micro_float":            { "points": 12.0, "description": "Float < 10M shares — extreme float crunch" },
         "mega_short_interest":    { "points": 12.0, "description": "Short interest as % of float >= 40%" },
         "hot_short_interest":     { "points":  8.0, "description": "Short interest as % of float >= 30%" },
         "elevated_short_interest":{ "points":  4.0, "description": "Short interest as % of float >= 20%" },
         "days_to_cover_hot":      { "points":  6.0, "description": "Days-to-cover >= 12" },
         "days_to_cover_notable":  { "points":  3.0, "description": "Days-to-cover >= 7" },
-        "low_float_squeeze_setup":{ "points":  6.0, "description": "Float < 20M shares and SI >= 20%" },
-        "si_jumped":              { "points":  5.0, "description": "SI%float jumped >= 30% week-over-week" },
-        "si_covering_wave":       { "points":  3.0, "description": "SI%float dropped >= 30% week-over-week" }
+        "si_jumped":              { "points":  5.0, "description": "SI%float jumped >= 30% vs prior snapshot" },
+        "si_covering_wave":       { "points":  3.0, "description": "SI%float dropped >= 30% vs prior snapshot" }
       }
     },
     "xbrl_facts": {
