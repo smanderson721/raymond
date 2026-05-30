@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Raymond — Live Market Scan</title>
+<title>MegaScanner — Live Market Scan</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   :root {
@@ -565,7 +565,7 @@
   <div class="brand">
     <div class="dot"></div>
     <div>
-      <h1>RAYMOND</h1>
+      <h1>MEGASCANNER</h1>
       <div class="sub">live market scan · 24/7</div>
     </div>
   </div>
@@ -624,16 +624,6 @@
     </div>
   </section>
 </main>
-
-<footer>
-  <div class="item"><strong id="f-scans">0</strong> scans</div>
-  <div class="item"><strong id="f-hits">0</strong> hits</div>
-  <div class="item">macro: <strong id="f-macro">—</strong></div>
-  <div class="item">last scan: <strong id="f-last">—</strong></div>
-  <div class="item">status: <span id="f-status" class="ok">live</span></div>
-  <a href="https://github.com/smanderson721/raymond" target="_blank">repo</a>
-  <a href="docs/data-sources.html">data sources</a>
-</footer>
 
 <script>
 const POLL_INTERVAL = 6000;
@@ -1152,7 +1142,8 @@ async function poll() {
     if (fresh.length > 0 && !document.hidden) {
       showBanner(fresh[fresh.length - 1]);
     }
-    document.getElementById("f-hits").textContent = hits.hits.length;
+    const _fh = document.getElementById("f-hits");
+    if (_fh) _fh.textContent = hits.hits.length;
   }
 
   if (macro && macro.label_key) {
@@ -1180,7 +1171,8 @@ async function poll() {
     };
     lt.innerHTML = (macro.left_tags  || []).filter(t => !_isIdleTag(t)).map(tagHtml).join("");
     rt.innerHTML = (macro.right_tags || []).filter(t => !_isIdleTag(t)).map(tagHtml).join("");
-    document.getElementById("f-macro").textContent =
+    const _fm = document.getElementById("f-macro");
+    if (_fm) _fm.textContent =
       `${macro.label || macro.label_key} · ${(macro.health_score ?? 0).toFixed(0)}/100 (VIX ${macro.vix_level ?? "—"})`;
     if (_prevPulseLabel !== null && _prevPulseLabel !== macro.label_key) {
       showPulseBanner(_prevPulseLabel, macro.label_key, macro.multiplier, macro.label_key);
@@ -1192,10 +1184,12 @@ async function poll() {
   if (status && Array.isArray(status.runs)) {
     const runs = status.runs;
     renderScanStrip(runs, streams || {}, lastRun || {});
-    document.getElementById("f-scans").textContent = runs.length;
+    const _fs = document.getElementById("f-scans");
+    if (_fs) _fs.textContent = runs.length;
     const last = runs[runs.length - 1];
     if (last) {
-      document.getElementById("f-last").textContent =
+      const _fl = document.getElementById("f-last");
+      if (_fl) _fl.textContent =
         `${last.scan} (${fmtTs(last.started_at)} · ${last.duration_sec}s · ${last.events}ev/${last.awards}aw)`;
     }
     // Only count errors from the last 6 hours so a one-off failure
@@ -1204,8 +1198,10 @@ async function poll() {
     const sixHoursAgo = Date.now() - 6 * 3600 * 1000;
     const errs = runs.filter(r => r.error && Date.parse(r.started_at) > sixHoursAgo).length;
     const f = document.getElementById("f-status");
-    if (errs > 0) { f.textContent = `${errs} recent errors`; f.className = "err"; }
-    else { f.textContent = "live"; f.className = "ok"; }
+    if (f) {
+      if (errs > 0) { f.textContent = `${errs} recent errors`; f.className = "err"; }
+      else { f.textContent = "live"; f.className = "ok"; }
+    }
   }
 }
 
@@ -1248,6 +1244,7 @@ function pollSoon() {
 
 function setLiveStatus(mode) {
   const f = document.getElementById("f-status");
+  if (!f) return;
   if (mode === "sse") { f.textContent = "live ⚡"; f.className = "ok"; }
   else if (mode === "poll") { f.textContent = "polling"; f.className = "ok"; }
   else if (mode === "lost") { f.textContent = "reconnecting…"; f.className = "stale"; }
