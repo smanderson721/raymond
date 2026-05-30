@@ -1,411 +1,6 @@
 {
   "days": [
     {
-      "date": "2026-05-16",
-      "top": [
-        {
-          "ticker": "SERV",
-          "bup": 86.0
-        },
-        {
-          "ticker": "SHPH",
-          "bup": 84.0
-        },
-        {
-          "ticker": "IREN",
-          "bup": 77.1
-        },
-        {
-          "ticker": "GCTK",
-          "bup": 77.0
-        },
-        {
-          "ticker": "LLY",
-          "bup": 75.76
-        },
-        {
-          "ticker": "CYCU",
-          "bup": 74.59
-        },
-        {
-          "ticker": "AD",
-          "bup": 72.55
-        },
-        {
-          "ticker": "PGYWW",
-          "bup": 69.0
-        },
-        {
-          "ticker": "BLSH",
-          "bup": 67.0
-        },
-        {
-          "ticker": "SSM",
-          "bup": 66.17
-        },
-        {
-          "ticker": "TOMZ",
-          "bup": 66.14
-        },
-        {
-          "ticker": "GIG",
-          "bup": 66.0
-        },
-        {
-          "ticker": "INAB",
-          "bup": 64.76
-        },
-        {
-          "ticker": "VSEC",
-          "bup": 64.0
-        },
-        {
-          "ticker": "JYNT",
-          "bup": 64.0
-        },
-        {
-          "ticker": "KPLT",
-          "bup": 63.0
-        },
-        {
-          "ticker": "OPENZ",
-          "bup": 62.0
-        },
-        {
-          "ticker": "BTBD",
-          "bup": 62.0
-        },
-        {
-          "ticker": "VTIX",
-          "bup": 60.53
-        },
-        {
-          "ticker": "BCDA",
-          "bup": 60.0
-        },
-        {
-          "ticker": "YMAT",
-          "bup": 59.25
-        },
-        {
-          "ticker": "AVTX",
-          "bup": 58.84
-        },
-        {
-          "ticker": "VSECU",
-          "bup": 58.27
-        },
-        {
-          "ticker": "CETY",
-          "bup": 57.68
-        },
-        {
-          "ticker": "BBIO",
-          "bup": 57.59
-        },
-        {
-          "ticker": "MTEK",
-          "bup": 56.0
-        },
-        {
-          "ticker": "RHLD",
-          "bup": 56.0
-        },
-        {
-          "ticker": "NWS",
-          "bup": 56.0
-        },
-        {
-          "ticker": "PAR",
-          "bup": 55.84
-        },
-        {
-          "ticker": "IPW",
-          "bup": 55.68
-        },
-        {
-          "ticker": "NAKA",
-          "bup": 55.68
-        },
-        {
-          "ticker": "MP",
-          "bup": 55.59
-        },
-        {
-          "ticker": "HKIT",
-          "bup": 55.0
-        },
-        {
-          "ticker": "AREB",
-          "bup": 55.0
-        },
-        {
-          "ticker": "GPGI",
-          "bup": 55.0
-        },
-        {
-          "ticker": "MBRX",
-          "bup": 55.0
-        },
-        {
-          "ticker": "GRND",
-          "bup": 55.0
-        },
-        {
-          "ticker": "USEG",
-          "bup": 54.92
-        },
-        {
-          "ticker": "GIGGW",
-          "bup": 54.0
-        },
-        {
-          "ticker": "HWH",
-          "bup": 54.0
-        },
-        {
-          "ticker": "KG",
-          "bup": 53.68
-        },
-        {
-          "ticker": "MORN",
-          "bup": 53.59
-        },
-        {
-          "ticker": "CRWV",
-          "bup": 53.59
-        },
-        {
-          "ticker": "FUN",
-          "bup": 53.42
-        },
-        {
-          "ticker": "STRL",
-          "bup": 53.41
-        },
-        {
-          "ticker": "NTRP",
-          "bup": 53.0
-        },
-        {
-          "ticker": "HAWK",
-          "bup": 53.0
-        },
-        {
-          "ticker": "AEIS",
-          "bup": 53.0
-        },
-        {
-          "ticker": "CABO",
-          "bup": 53.0
-        },
-        {
-          "ticker": "CURX",
-          "bup": 53.0
-        },
-        {
-          "ticker": "INM",
-          "bup": 52.27
-        },
-        {
-          "ticker": "XXII",
-          "bup": 52.17
-        },
-        {
-          "ticker": "OPENL",
-          "bup": 52.0
-        },
-        {
-          "ticker": "ORIO",
-          "bup": 52.0
-        },
-        {
-          "ticker": "SPB",
-          "bup": 52.0
-        },
-        {
-          "ticker": "BTOC",
-          "bup": 52.0
-        },
-        {
-          "ticker": "CYCUW",
-          "bup": 52.0
-        },
-        {
-          "ticker": "ANY",
-          "bup": 51.94
-        },
-        {
-          "ticker": "COLL",
-          "bup": 51.76
-        },
-        {
-          "ticker": "PGY",
-          "bup": 51.76
-        },
-        {
-          "ticker": "WGRX",
-          "bup": 51.55
-        },
-        {
-          "ticker": "ENTX",
-          "bup": 51.13
-        },
-        {
-          "ticker": "ALGS",
-          "bup": 51.0
-        },
-        {
-          "ticker": "BETRW",
-          "bup": 51.0
-        },
-        {
-          "ticker": "SSII",
-          "bup": 51.0
-        },
-        {
-          "ticker": "PRTA",
-          "bup": 50.27
-        },
-        {
-          "ticker": "ONCO",
-          "bup": 50.0
-        },
-        {
-          "ticker": "VTGN",
-          "bup": 50.0
-        },
-        {
-          "ticker": "ARCT",
-          "bup": 50.0
-        },
-        {
-          "ticker": "GELS",
-          "bup": 50.0
-        },
-        {
-          "ticker": "AIIO",
-          "bup": 49.85
-        },
-        {
-          "ticker": "EZRA",
-          "bup": 49.55
-        },
-        {
-          "ticker": "AGAE",
-          "bup": 49.17
-        },
-        {
-          "ticker": "BIAF",
-          "bup": 49.0
-        },
-        {
-          "ticker": "RKT",
-          "bup": 49.0
-        },
-        {
-          "ticker": "GIGGU",
-          "bup": 49.0
-        },
-        {
-          "ticker": "SOUN",
-          "bup": 49.0
-        },
-        {
-          "ticker": "OPENW",
-          "bup": 49.0
-        },
-        {
-          "ticker": "ENGNW",
-          "bup": 49.0
-        },
-        {
-          "ticker": "HTOO",
-          "bup": 48.84
-        },
-        {
-          "ticker": "CTXR",
-          "bup": 48.76
-        },
-        {
-          "ticker": "DCH",
-          "bup": 48.64
-        },
-        {
-          "ticker": "GENVR",
-          "bup": 48.57
-        },
-        {
-          "ticker": "FTFT",
-          "bup": 48.35
-        },
-        {
-          "ticker": "COF",
-          "bup": 48.27
-        },
-        {
-          "ticker": "PFSA",
-          "bup": 48.27
-        },
-        {
-          "ticker": "CELH",
-          "bup": 48.17
-        },
-        {
-          "ticker": "CNCK",
-          "bup": 47.88
-        },
-        {
-          "ticker": "SHOP",
-          "bup": 47.76
-        },
-        {
-          "ticker": "CPOP",
-          "bup": 47.76
-        },
-        {
-          "ticker": "CIIT",
-          "bup": 47.59
-        },
-        {
-          "ticker": "NCT",
-          "bup": 47.22
-        },
-        {
-          "ticker": "SLMT",
-          "bup": 47.0
-        },
-        {
-          "ticker": "SNYR",
-          "bup": 47.0
-        },
-        {
-          "ticker": "HXHX",
-          "bup": 46.76
-        },
-        {
-          "ticker": "XMTR",
-          "bup": 46.51
-        },
-        {
-          "ticker": "AEYE",
-          "bup": 46.0
-        },
-        {
-          "ticker": "RMTI",
-          "bup": 46.0
-        },
-        {
-          "ticker": "ADTX",
-          "bup": 46.0
-        },
-        {
-          "ticker": "GTIM",
-          "bup": 46.0
-        }
-      ]
-    },
-    {
       "date": "2026-05-19",
       "top": [
         {
@@ -3236,6 +2831,411 @@
         },
         {
           "ticker": "OSRH",
+          "bup": 46.0
+        }
+      ]
+    },
+    {
+      "date": "2026-05-30",
+      "top": [
+        {
+          "ticker": "SERV",
+          "bup": 85.13
+        },
+        {
+          "ticker": "SHPH",
+          "bup": 85.0
+        },
+        {
+          "ticker": "AD",
+          "bup": 80.27
+        },
+        {
+          "ticker": "CYCU",
+          "bup": 77.17
+        },
+        {
+          "ticker": "LLY",
+          "bup": 75.76
+        },
+        {
+          "ticker": "IREN",
+          "bup": 75.68
+        },
+        {
+          "ticker": "GCTK",
+          "bup": 73.44
+        },
+        {
+          "ticker": "PGYWW",
+          "bup": 69.0
+        },
+        {
+          "ticker": "BLSH",
+          "bup": 68.59
+        },
+        {
+          "ticker": "GIG",
+          "bup": 67.0
+        },
+        {
+          "ticker": "SSM",
+          "bup": 66.76
+        },
+        {
+          "ticker": "TOMZ",
+          "bup": 66.6
+        },
+        {
+          "ticker": "KPLT",
+          "bup": 65.0
+        },
+        {
+          "ticker": "VSECU",
+          "bup": 64.39
+        },
+        {
+          "ticker": "GRND",
+          "bup": 64.0
+        },
+        {
+          "ticker": "OPENZ",
+          "bup": 62.13
+        },
+        {
+          "ticker": "INAB",
+          "bup": 61.34
+        },
+        {
+          "ticker": "USEG",
+          "bup": 61.26
+        },
+        {
+          "ticker": "JYNT",
+          "bup": 61.17
+        },
+        {
+          "ticker": "CETY",
+          "bup": 60.68
+        },
+        {
+          "ticker": "AVTX",
+          "bup": 60.64
+        },
+        {
+          "ticker": "NAKA",
+          "bup": 60.0
+        },
+        {
+          "ticker": "BCDA",
+          "bup": 58.27
+        },
+        {
+          "ticker": "VTIX",
+          "bup": 58.2
+        },
+        {
+          "ticker": "GPGI",
+          "bup": 57.76
+        },
+        {
+          "ticker": "IPW",
+          "bup": 57.0
+        },
+        {
+          "ticker": "RHLD",
+          "bup": 56.0
+        },
+        {
+          "ticker": "PFSA",
+          "bup": 56.0
+        },
+        {
+          "ticker": "NWS",
+          "bup": 56.0
+        },
+        {
+          "ticker": "VSEC",
+          "bup": 55.88
+        },
+        {
+          "ticker": "KG",
+          "bup": 55.76
+        },
+        {
+          "ticker": "BBIO",
+          "bup": 55.59
+        },
+        {
+          "ticker": "PAR",
+          "bup": 55.13
+        },
+        {
+          "ticker": "STRL",
+          "bup": 54.81
+        },
+        {
+          "ticker": "GIGGW",
+          "bup": 54.0
+        },
+        {
+          "ticker": "FUN",
+          "bup": 53.64
+        },
+        {
+          "ticker": "AEIS",
+          "bup": 53.0
+        },
+        {
+          "ticker": "XXII",
+          "bup": 53.0
+        },
+        {
+          "ticker": "MTEK",
+          "bup": 52.84
+        },
+        {
+          "ticker": "MP",
+          "bup": 52.76
+        },
+        {
+          "ticker": "EZRA",
+          "bup": 52.35
+        },
+        {
+          "ticker": "MBRX",
+          "bup": 52.26
+        },
+        {
+          "ticker": "RKT",
+          "bup": 52.13
+        },
+        {
+          "ticker": "COLL",
+          "bup": 52.0
+        },
+        {
+          "ticker": "CRWV",
+          "bup": 51.84
+        },
+        {
+          "ticker": "MORN",
+          "bup": 51.84
+        },
+        {
+          "ticker": "BTBD",
+          "bup": 51.76
+        },
+        {
+          "ticker": "NTRP",
+          "bup": 51.59
+        },
+        {
+          "ticker": "ORIO",
+          "bup": 51.59
+        },
+        {
+          "ticker": "HWH",
+          "bup": 51.35
+        },
+        {
+          "ticker": "BACCR",
+          "bup": 51.0
+        },
+        {
+          "ticker": "HAWK",
+          "bup": 50.54
+        },
+        {
+          "ticker": "PGY",
+          "bup": 50.53
+        },
+        {
+          "ticker": "VTGN",
+          "bup": 50.35
+        },
+        {
+          "ticker": "ENTX",
+          "bup": 50.2
+        },
+        {
+          "ticker": "OPENL",
+          "bup": 50.1
+        },
+        {
+          "ticker": "ALGS",
+          "bup": 49.84
+        },
+        {
+          "ticker": "CURX",
+          "bup": 49.68
+        },
+        {
+          "ticker": "ANY",
+          "bup": 49.61
+        },
+        {
+          "ticker": "CABO",
+          "bup": 49.54
+        },
+        {
+          "ticker": "NCT",
+          "bup": 49.53
+        },
+        {
+          "ticker": "SPB",
+          "bup": 49.17
+        },
+        {
+          "ticker": "NEXR",
+          "bup": 49.1
+        },
+        {
+          "ticker": "HKIT",
+          "bup": 49.0
+        },
+        {
+          "ticker": "AIIO",
+          "bup": 48.62
+        },
+        {
+          "ticker": "SSII",
+          "bup": 48.55
+        },
+        {
+          "ticker": "PRTA",
+          "bup": 48.54
+        },
+        {
+          "ticker": "OPENW",
+          "bup": 48.52
+        },
+        {
+          "ticker": "FFAI",
+          "bup": 48.42
+        },
+        {
+          "ticker": "SOUN",
+          "bup": 48.39
+        },
+        {
+          "ticker": "YMAT",
+          "bup": 48.37
+        },
+        {
+          "ticker": "BIAF",
+          "bup": 48.35
+        },
+        {
+          "ticker": "BIYA",
+          "bup": 48.29
+        },
+        {
+          "ticker": "YELP",
+          "bup": 48.17
+        },
+        {
+          "ticker": "FTFT",
+          "bup": 48.17
+        },
+        {
+          "ticker": "SHOP",
+          "bup": 48.1
+        },
+        {
+          "ticker": "CTXR",
+          "bup": 48.1
+        },
+        {
+          "ticker": "DCH",
+          "bup": 48.1
+        },
+        {
+          "ticker": "OFAL",
+          "bup": 48.0
+        },
+        {
+          "ticker": "KTB",
+          "bup": 48.0
+        },
+        {
+          "ticker": "POST",
+          "bup": 48.0
+        },
+        {
+          "ticker": "COF",
+          "bup": 48.0
+        },
+        {
+          "ticker": "ADTX",
+          "bup": 48.0
+        },
+        {
+          "ticker": "WHLR",
+          "bup": 47.68
+        },
+        {
+          "ticker": "CNCK",
+          "bup": 47.55
+        },
+        {
+          "ticker": "ABTS",
+          "bup": 47.31
+        },
+        {
+          "ticker": "KDK",
+          "bup": 47.0
+        },
+        {
+          "ticker": "CDTG",
+          "bup": 47.0
+        },
+        {
+          "ticker": "UBER",
+          "bup": 47.0
+        },
+        {
+          "ticker": "DVN",
+          "bup": 47.0
+        },
+        {
+          "ticker": "IIIV",
+          "bup": 47.0
+        },
+        {
+          "ticker": "RMTI",
+          "bup": 47.0
+        },
+        {
+          "ticker": "ARCT",
+          "bup": 46.76
+        },
+        {
+          "ticker": "XMTR",
+          "bup": 46.73
+        },
+        {
+          "ticker": "ENGN",
+          "bup": 46.71
+        },
+        {
+          "ticker": "CELH",
+          "bup": 46.64
+        },
+        {
+          "ticker": "TTMI",
+          "bup": 46.39
+        },
+        {
+          "ticker": "VEL",
+          "bup": 46.27
+        },
+        {
+          "ticker": "AEI",
+          "bup": 46.0
+        },
+        {
+          "ticker": "SWAGW",
           "bup": 46.0
         }
       ]
