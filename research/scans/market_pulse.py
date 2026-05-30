@@ -177,7 +177,9 @@ def _score_trend(snap: dict) -> tuple[float, str]:
     if spy.get("above_sma200"): score += 50
     if spy.get("above_sma50"):  score += 30
     if (spy.get("pct_5d") or 0) > 0: score += 20
-    label = "trend ↑" if score >= 70 else ("trend mixed" if score >= 40 else "trend ↓")
+    pct = (spy.get("pct_5d") or 0) * 100
+    arrow = "↑" if score >= 70 else ("→" if score >= 40 else "↓")
+    label = f"SPY {pct:+.1f}% 5d {arrow}"
     return min(100.0, score), label
 
 
@@ -187,17 +189,14 @@ def _score_vol(snap: dict) -> tuple[float, str]:
         return 50.0, "VIX —"
     # Linear ramp: VIX 12 → 100, VIX 35 → 0
     raw = max(0.0, min(100.0, 100.0 * (35.0 - vix) / 23.0))
-    if   vix <= 14: tag = f"VIX {vix:.1f} calm"
-    elif vix <= 20: tag = f"VIX {vix:.1f} mild"
-    elif vix <= 28: tag = f"VIX {vix:.1f} elevated"
-    else:           tag = f"VIX {vix:.1f} high"
-    return raw, tag
+    return raw, f"VIX {vix:.1f}"
 
 
 def _score_breadth(snap: dict) -> tuple[float, str, int]:
     above = sum(1 for tk in SECTOR_ETFS if (snap.get(tk) or {}).get("above_sma50"))
     total = len(SECTOR_ETFS)
-    return (100.0 * above / total if total else 50.0), f"breadth {above}/{total}", above
+    pct = (100.0 * above / total) if total else 50.0
+    return pct, f"breadth {pct:.0f}%", above
 
 
 def _score_curve(fred: dict) -> tuple[float, str, float | None]:
@@ -210,10 +209,7 @@ def _score_curve(fred: dict) -> tuple[float, str, float | None]:
     # spread = +1.5 → 100, spread = 0 → 40, spread = -1.0 → 0
     raw = max(0.0, min(100.0, 40.0 + spread * 40.0))
     bp = int(round(spread * 100))
-    if spread < 0:    tag = f"curve {bp:+d}bp inverted"
-    elif spread < 0.25: tag = f"curve {bp:+d}bp flat"
-    else:             tag = f"curve {bp:+d}bp normal"
-    return raw, tag, round(spread, 3)
+    return raw, f"curve {bp:+d}bp", round(spread, 3)
 
 
 def _score_dollar(snap: dict) -> tuple[float, str]:
@@ -408,8 +404,8 @@ def run() -> dict:
             "label":        label_name,       # "Clear skies" | …
             "multiplier":   mult,
             "components":   components,
-            "left_tags":    [trend_tag, breadth_tag, vol_tag],
-            "right_tags":   [curve_tag, usd_tag, rel_tag],
+            "left_tags":    [trend_tag, breadth_tag],
+            "right_tags":   [vol_tag, curve_tag, usd_tag, rel_tag],
             "spy_above_sma50":  spy.get("above_sma50", False),
             "spy_above_sma200": spy.get("above_sma200", False),
             "vix_level":   (vix.get("price")),

@@ -274,17 +274,18 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .chip.tech       { color:#7dd3fc; border-color:rgba(125,211,252,.35); background:rgba(125,211,252,.08); }
-  .chip.macro      { color:#facc15; border-color:rgba(250,204,21,.35); background:rgba(250,204,21,.08); }
-  .chip.insider    { color:#a78bfa; border-color:rgba(167,139,250,.35); background:rgba(167,139,250,.08); }
-  .chip.options    { color:#fb923c; border-color:rgba(251,146,60,.35); background:rgba(251,146,60,.08); }
-  .chip.reg_sho    { color:#fb7185; border-color:rgba(251,113,133,.35); background:rgba(251,113,133,.08); }
-  .chip.material   { color:#34d399; border-color:rgba(52,211,153,.35); background:rgba(52,211,153,.08); }
-  .chip.sc_13dg    { color:#22d3ee; border-color:rgba(34,211,238,.35); background:rgba(34,211,238,.08); }
-  .chip.halt       { color:#f87171; border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.08); }
-  .chip.fundamentals { color:#94a3b8; border-color:rgba(148,163,184,.35); background:rgba(148,163,184,.08); }
-  .chip.rvol       { color:#4ade80; border-color:rgba(74,222,128,.35); background:rgba(74,222,128,.08); }
-  .chip.news       { color:#f472b6; border-color:rgba(244,114,182,.35); background:rgba(244,114,182,.08); }
+  .chip.tech         { color:#38bdf8; border-color:rgba(56,189,248,.35);  background:rgba(56,189,248,.08); }
+  .chip.macro        { color:#fde047; border-color:rgba(253,224,71,.35);  background:rgba(253,224,71,.08); }
+  .chip.insider      { color:#a78bfa; border-color:rgba(167,139,250,.35); background:rgba(167,139,250,.08); }
+  .chip.options      { color:#f97316; border-color:rgba(249,115,22,.35);  background:rgba(249,115,22,.08); }
+  .chip.reg_sho      { color:#f43f5e; border-color:rgba(244,63,94,.35);   background:rgba(244,63,94,.08); }
+  .chip.material     { color:#22c55e; border-color:rgba(34,197,94,.35);   background:rgba(34,197,94,.08); }
+  .chip.sc_13dg      { color:#06b6d4; border-color:rgba(6,182,212,.35);   background:rgba(6,182,212,.08); }
+  .chip.halt         { color:#ef4444; border-color:rgba(239,68,68,.35);   background:rgba(239,68,68,.08); }
+  .chip.fundamentals { color:#d97706; border-color:rgba(217,119,6,.35);   background:rgba(217,119,6,.08); }
+  .chip.rvol         { color:#84cc16; border-color:rgba(132,204,22,.35);  background:rgba(132,204,22,.08); }
+  .chip.news         { color:#6366f1; border-color:rgba(99,102,241,.35);  background:rgba(99,102,241,.08); }
+  .chip.xbrl_facts   { color:#d946ef; border-color:rgba(217,70,239,.35);  background:rgba(217,70,239,.08); }
   .row .reason {
     color: var(--muted);
     font-size: 11px;
@@ -300,7 +301,9 @@
     grid-area: tags;
     overflow: hidden;
     position: relative;
-    height: 18px;
+    height: 22px;
+    display: flex;
+    align-items: center;
   }
   /* Only apply the edge-fade mask while actually scrolling, otherwise
      the leftmost tag of a stationary row looks awkwardly clipped. */
@@ -314,6 +317,8 @@
     white-space: nowrap;
     will-change: transform;
     padding-right: 24px;
+    flex: 0 0 auto;
+    align-items: center;
   }
   .row .tags.scrolling .tags-track {
     animation: tag-marquee linear infinite;
@@ -334,18 +339,18 @@
     border: 1px solid transparent;
     flex: 0 0 auto;
   }
-  .row .tag.tech         { color:#7dd3fc; border-color:rgba(125,211,252,.35); background:rgba(125,211,252,.08); }
-  .row .tag.macro        { color:#facc15; border-color:rgba(250,204,21,.35); background:rgba(250,204,21,.08); }
+  .row .tag.tech         { color:#38bdf8; border-color:rgba(56,189,248,.35);  background:rgba(56,189,248,.08); }
+  .row .tag.macro        { color:#fde047; border-color:rgba(253,224,71,.35);  background:rgba(253,224,71,.08); }
   .row .tag.insider      { color:#a78bfa; border-color:rgba(167,139,250,.35); background:rgba(167,139,250,.08); }
-  .row .tag.options      { color:#fb923c; border-color:rgba(251,146,60,.35); background:rgba(251,146,60,.08); }
-  .row .tag.reg_sho      { color:#fb7185; border-color:rgba(251,113,133,.35); background:rgba(251,113,133,.08); }
-  .row .tag.material     { color:#34d399; border-color:rgba(52,211,153,.35); background:rgba(52,211,153,.08); }
-  .row .tag.sc_13dg      { color:#22d3ee; border-color:rgba(34,211,238,.35); background:rgba(34,211,238,.08); }
-  .row .tag.halt         { color:#f87171; border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.08); }
-  .row .tag.fundamentals { color:#94a3b8; border-color:rgba(148,163,184,.35); background:rgba(148,163,184,.08); }
-  .row .tag.xbrl_facts   { color:#c4b5fd; border-color:rgba(196,181,253,.35); background:rgba(196,181,253,.08); }
-  .row .tag.rvol         { color:#4ade80; border-color:rgba(74,222,128,.35); background:rgba(74,222,128,.08); }
-  .row .tag.news         { color:#f472b6; border-color:rgba(244,114,182,.35); background:rgba(244,114,182,.08); }
+  .row .tag.options      { color:#f97316; border-color:rgba(249,115,22,.35);  background:rgba(249,115,22,.08); }
+  .row .tag.reg_sho      { color:#f43f5e; border-color:rgba(244,63,94,.35);   background:rgba(244,63,94,.08); }
+  .row .tag.material     { color:#22c55e; border-color:rgba(34,197,94,.35);   background:rgba(34,197,94,.08); }
+  .row .tag.sc_13dg      { color:#06b6d4; border-color:rgba(6,182,212,.35);   background:rgba(6,182,212,.08); }
+  .row .tag.halt         { color:#ef4444; border-color:rgba(239,68,68,.35);   background:rgba(239,68,68,.08); }
+  .row .tag.fundamentals { color:#d97706; border-color:rgba(217,119,6,.35);   background:rgba(217,119,6,.08); }
+  .row .tag.xbrl_facts   { color:#d946ef; border-color:rgba(217,70,239,.35);  background:rgba(217,70,239,.08); }
+  .row .tag.rvol         { color:#84cc16; border-color:rgba(132,204,22,.35);  background:rgba(132,204,22,.08); }
+  .row .tag.news         { color:#6366f1; border-color:rgba(99,102,241,.35);  background:rgba(99,102,241,.08); }
   .row .tag.proposed     { border-style:dashed; opacity:.85; }
 
   /* Pulse-change inline banner (separate from 🎯 hit banner) */
@@ -447,17 +452,33 @@
   .scan-tile.err     { border-left-color: var(--red); background: var(--red-dim); }
   .scan-tile.pending { border-left-color: var(--dim); opacity: 0.7; }
   /* per-scan accent ribbon (overrides health border when tile is ok) */
-  .scan-tile.ok.scan-market_pulse      { border-left-color:#facc15; }
-  .scan-tile.ok.scan-tech_slice        { border-left-color:#7dd3fc; }
+  .scan-tile.ok.scan-market_pulse      { border-left-color:#fde047; }
+  .scan-tile.ok.scan-tech_slice        { border-left-color:#38bdf8; }
   .scan-tile.ok.scan-insider_cluster   { border-left-color:#a78bfa; }
-  .scan-tile.ok.scan-material_8k       { border-left-color:#34d399; }
-  .scan-tile.ok.scan-sc_13dg           { border-left-color:#22d3ee; }
-  .scan-tile.ok.scan-halt_tape         { border-left-color:#f87171; }
-  .scan-tile.ok.scan-rvol_stream       { border-left-color:#4ade80; }
-  .scan-tile.ok.scan-options_unusual   { border-left-color:#fb923c; }
-  .scan-tile.ok.scan-reg_sho           { border-left-color:#fb7185; }
-  .scan-tile.ok.scan-fundamentals_snap { border-left-color:#94a3b8; }
-  .scan-tile.ok.scan-xbrl_facts        { border-left-color:#e879f9; }
+  .scan-tile.ok.scan-material_8k       { border-left-color:#22c55e; }
+  .scan-tile.ok.scan-sc_13dg           { border-left-color:#06b6d4; }
+  .scan-tile.ok.scan-halt_tape         { border-left-color:#ef4444; }
+  .scan-tile.ok.scan-rvol_stream       { border-left-color:#84cc16; }
+  .scan-tile.ok.scan-options_unusual   { border-left-color:#f97316; }
+  .scan-tile.ok.scan-reg_sho           { border-left-color:#f43f5e; }
+  .scan-tile.ok.scan-fundamentals_snap { border-left-color:#d97706; }
+  .scan-tile.ok.scan-xbrl_facts        { border-left-color:#d946ef; }
+  .scan-tile.ok.scan-news_catalyst     { border-left-color:#6366f1; }
+
+  /* Event-log line colours — the left border + message colour tint per
+     scan so the terminal feed visually matches its scan tile / chip. */
+  .ev[data-scan="market_pulse"]      .msg { color:#fde047; } .ev[data-scan="market_pulse"]      { border-left:2px solid rgba(253,224,71,.55); padding-left:6px; }
+  .ev[data-scan="tech_slice"]        .msg { color:#38bdf8; } .ev[data-scan="tech_slice"]        { border-left:2px solid rgba(56,189,248,.55); padding-left:6px; }
+  .ev[data-scan="insider_cluster"]   .msg { color:#a78bfa; } .ev[data-scan="insider_cluster"]   { border-left:2px solid rgba(167,139,250,.55); padding-left:6px; }
+  .ev[data-scan="material_8k"]       .msg { color:#22c55e; } .ev[data-scan="material_8k"]       { border-left:2px solid rgba(34,197,94,.55); padding-left:6px; }
+  .ev[data-scan="sc_13dg"]           .msg { color:#06b6d4; } .ev[data-scan="sc_13dg"]           { border-left:2px solid rgba(6,182,212,.55); padding-left:6px; }
+  .ev[data-scan="halt_tape"]         .msg { color:#ef4444; } .ev[data-scan="halt_tape"]         { border-left:2px solid rgba(239,68,68,.55); padding-left:6px; }
+  .ev[data-scan="rvol_stream"]       .msg { color:#84cc16; } .ev[data-scan="rvol_stream"]       { border-left:2px solid rgba(132,204,22,.55); padding-left:6px; }
+  .ev[data-scan="options_unusual"]   .msg { color:#f97316; } .ev[data-scan="options_unusual"]   { border-left:2px solid rgba(249,115,22,.55); padding-left:6px; }
+  .ev[data-scan="reg_sho"]           .msg { color:#f43f5e; } .ev[data-scan="reg_sho"]           { border-left:2px solid rgba(244,63,94,.55); padding-left:6px; }
+  .ev[data-scan="fundamentals_snap"] .msg { color:#d97706; } .ev[data-scan="fundamentals_snap"] { border-left:2px solid rgba(217,119,6,.55); padding-left:6px; }
+  .ev[data-scan="xbrl_facts"]        .msg { color:#d946ef; } .ev[data-scan="xbrl_facts"]        { border-left:2px solid rgba(217,70,239,.55); padding-left:6px; }
+  .ev[data-scan="news_catalyst"]     .msg { color:#6366f1; } .ev[data-scan="news_catalyst"]     { border-left:2px solid rgba(99,102,241,.55); padding-left:6px; }
   .scan-tile.recent::after {
     content: "";
     position: absolute;
@@ -545,6 +566,7 @@ const URLS = {
   watchlist: "data/live/watchlist.json",
   hits:      "data/live/hits.json",
   status:    "data/live/status.json",
+  lastRun:   "data/live/_scan_last_run.json",
   macro:     "data/live/market_pulse.json",
   streams:   "data/live/_stream_status.json",
   weights:   "api/scan-weights",
@@ -574,13 +596,24 @@ const SCAN_REGISTRY = [
   { id: "news_catalyst",     title: "News Catalysts",     cron: "3-59/10 * * * *",    label: "every 10 min",          stale_min: 30   },
 ];
 
-function renderScanStrip(runs, streams) {
+function renderScanStrip(runs, streams, lastRunRegistry) {
   const strip = document.getElementById("scan-strip");
   // pick the most-recent run per scan
   const latest = new Map();
   for (const r of runs || []) {
     const prev = latest.get(r.scan);
     if (!prev || r.started_at > prev.started_at) latest.set(r.scan, r);
+  }
+  // Fall back to the persistent ``_scan_last_run.json`` registry for
+  // any scan that's not in the rolling status history (e.g. a daily
+  // scan that hasn't run since the daemon was restarted, but did run
+  // earlier today — without the registry the tile would show "Never"
+  // even though the user knows the scan executed).
+  const registry = (lastRunRegistry && lastRunRegistry.scans) || {};
+  for (const [scanId, row] of Object.entries(registry)) {
+    if (!latest.has(scanId) && row && row.started_at) {
+      latest.set(scanId, { scan: scanId, ...row });
+    }
   }
   const now = Date.now();
   strip.innerHTML = SCAN_REGISTRY.map(meta => {
@@ -746,6 +779,7 @@ function _scanChipClass(scan) {
   if (scan.startsWith("sc_13"))       return "sc_13dg";
   if (scan.startsWith("halt"))        return "halt";
   if (scan.startsWith("fundamentals")) return "fundamentals";
+  if (scan.startsWith("xbrl"))        return "xbrl_facts";
   if (scan.startsWith("rvol"))        return "rvol";
   if (scan.startsWith("news_catalyst")) return "news";
   return "";
@@ -918,9 +952,9 @@ function pumpQueue() {
 }
 
 async function poll() {
-  const [events, watchlist, hits, status, macro, streams] = await Promise.all([
+  const [events, watchlist, hits, status, lastRun, macro, streams] = await Promise.all([
     jget(URLS.events), jget(URLS.watchlist), jget(URLS.hits),
-    jget(URLS.status), jget(URLS.macro), jget(URLS.streams),
+    jget(URLS.status), jget(URLS.lastRun), jget(URLS.macro), jget(URLS.streams),
   ]);
 
   if (events && Array.isArray(events.events)) {
@@ -1003,7 +1037,7 @@ async function poll() {
 
   if (status && Array.isArray(status.runs)) {
     const runs = status.runs;
-    renderScanStrip(runs, streams || {});
+    renderScanStrip(runs, streams || {}, lastRun || {});
     document.getElementById("f-scans").textContent = runs.length;
     const last = runs[runs.length - 1];
     if (last) {
@@ -1031,7 +1065,7 @@ function tick() {
 setInterval(tick, 1000);
 tick();
 
-renderScanStrip([], {});  // show pending tiles before first poll
+renderScanStrip([], {}, {});  // show pending tiles before first poll
 poll();
 
 // ── Live updates via SSE (live_daemon) with poll fallback ────────────

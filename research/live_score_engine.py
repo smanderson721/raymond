@@ -20,7 +20,9 @@ from __future__ import annotations
 import json
 import math
 import os
+import threading
 import time
+import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -32,18 +34,34 @@ EVENTS_FILE = os.path.join(LIVE_DIR, "events.json")
 HITS_FILE = os.path.join(LIVE_DIR, "hits.json")
 WATCHLIST_FILE = os.path.join(LIVE_DIR, "watchlist.json")
 STATUS_FILE = os.path.join(LIVE_DIR, "status.json")
+# Persistent per-scan "last successful run" registry, written every time
+# any scan finishes. Unlike ``status.json`` (which is a rolling history),
+# this file keeps exactly one row per scan and is never trimmed, so the
+# scan strip can still show "last seen 18h ago" for daily scans after a
+# daemon restart that wiped the rolling history.
+SCAN_LAST_RUN_FILE = os.path.join(LIVE_DIR, "_scan_last_run.json")
 
 # Tuning
-HALF_LIFE_HOURS = 12.0
+# 1-week half-life: a 200-point score is still 100 a week later, 50 after
+# two weeks. The previous 12h half-life produced false "vanished" stocks
+# whenever a scoring race condition (now fixed) clobbered scores.json.
+HALF_LIFE_HOURS = 168.0
 HALF_LIFE_SEC = HALF_LIFE_HOURS * 3600
 HIT_THRESHOLD = 12          # single-event points >= this triggers a banner
 MAX_EVENTS = 600            # rolling event log size
 MAX_HITS = 60               # rolling hits log size
 WATCHLIST_SIZE = 30         # we emit top-30, page can show top-10
-ATTR_TAG_HALF_LIFE_HOURS = 24.0   # per-ticker attribute tags decay faster than score
+ATTR_TAG_HALF_LIFE_HOURS = 72.0   # per-ticker attribute tags decay faster than score
 ATTR_TAG_HALF_LIFE_SEC = ATTR_TAG_HALF_LIFE_HOURS * 3600
 ATTR_TAG_MIN_WEIGHT = 0.15        # tags below this normalized weight get pruned
 MAX_ATTR_TAGS_PER_TICKER = 24     # cap the per-ticker tag list
+
+# All persistent state files are read-modify-written by multiple scan
+# tasks running concurrently in the daemon's thread pool. Serialize
+# every RMW cycle with a single process-wide lock to prevent lost-update
+# races that previously wiped scores.json down to a single run's worth
+# of data (200-point stocks vanishing within minutes).
+_STATE_LOCK = threading.RLock()
 
 LEVELS = {"info": 1, "notable": 2, "hit": 3}
 
@@ -72,9 +90,19 @@ def _read(path: str, default):
 
 def _write(path: str, data) -> None:
     _ensure_dir()
-    tmp = path + ".tmp"
+    # Per-call unique tmp filename so two concurrent writes never
+    # clobber each other's in-flight tmp file (which previously caused
+    # the post-rename JSON to be truncated/corrupted and triggered the
+    # next _read to fall back to its default, wiping all historical
+    # scores).
+    tmp = f"{path}.{os.getpid()}.{uuid.uuid4().hex}.tmp"
     with open(tmp, "w") as f:
         json.dump(data, f, separators=(",", ":"))
+        f.flush()
+        try:
+            os.fsync(f.fileno())
+        except OSError:
+            pass
     os.replace(tmp, path)
 
 
@@ -221,6 +249,21 @@ class Session:
 
     # ── flush ─────────────────────────────────────────────────
     def close(self, error: Optional[str] = None) -> dict:
+        # Serialize the entire read-modify-write cycle. Two scans
+        # finishing within the same few hundred milliseconds previously
+        # raced: each read the same prior scores, applied its own
+        # awards, and the second writer's content overwrote the first's
+        # — silently losing one full run of awards. Worse, when two
+        # concurrent _write calls collided on the static ``.tmp``
+        # filename, the post-rename file could be truncated, causing
+        # the next _read to fall back to ``{}`` and the next write to
+        # wipe scores.json entirely (the "200-point stock disappears in
+        # an hour" symptom). The lock plus per-call tmp filenames close
+        # both races.
+        with _STATE_LOCK:
+            return self._close_locked(error)
+
+    def _close_locked(self, error: Optional[str]) -> dict:
         now = _now_ts()
         now_iso = _now_iso()
         duration = round(now - self._t0, 2)
@@ -342,6 +385,25 @@ class Session:
         status["runs"] = trimmed
         status["updated_at"] = now_iso
         _write(STATUS_FILE, status)
+
+        # 6) persistent per-scan "last successful run" registry. This
+        # file is never trimmed, so the scan strip can still show "last
+        # seen 18h ago" for daily scans even after a daemon restart
+        # that drained the rolling history above.
+        last_blob = _read(SCAN_LAST_RUN_FILE, {"scans": {}})
+        scans_map = last_blob.get("scans", {})
+        scans_map[self.scan] = {
+            "started_at":   self.started_at,
+            "duration_sec": duration,
+            "events":       len(self._events),
+            "awards":       len(self._awards),
+            "hits":         len(self._hits),
+            "error":        error,
+            "note":         self.note,
+        }
+        last_blob["scans"] = scans_map
+        last_blob["updated_at"] = now_iso
+        _write(SCAN_LAST_RUN_FILE, last_blob)
 
         return {
             "scan": self.scan,
