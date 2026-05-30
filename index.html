@@ -162,6 +162,7 @@
     display: flex; align-items: center; gap: 10px;
   }
   .col-head .count { color: var(--dim); font-weight: 400; }
+  .col-head.col-head-center { justify-content: center; }
   .col-head .live-dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: var(--green); box-shadow: 0 0 6px var(--green);
@@ -218,6 +219,12 @@
     flex: 1;
     overflow-y: auto;
     padding: 6px 0;
+    /* flex column so we can reorder rows visually via ``style.order``
+       instead of detaching / re-attaching them — detaching restarts
+       the CSS marquee animation on the tag track, which is what was
+       making the tags skip backwards every time the rank shuffled. */
+    display: flex;
+    flex-direction: column;
   }
   #watch::-webkit-scrollbar { width: 8px; }
   #watch::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -532,9 +539,8 @@
     <div id="terminal"></div>
   </section>
   <section id="watch-wrap">
-    <div class="col-head">
+    <div class="col-head col-head-center">
       🏆 TOP 10 WATCHLIST
-      <span class="count" id="wl-meta">scores decay with a 12-hour half-life</span>
     </div>
     <div id="watch"></div>
   </section>
@@ -806,6 +812,63 @@ async function refreshProposedKeys() {
   } catch (e) { /* network blip — try again next SSE tick */ }
 }
 refreshProposedKeys();
+
+// ── per-scan colour overrides ──
+// Live colours are loaded from /api/scan-colors (PUT-able from the
+// pitches.html Attributes tab) and injected as an inline <style> that
+// overrides the bundled scan palette. Re-applied on page load and on
+// every "colors" SSE event so a change in the editor takes effect
+// without a page refresh.
+const SCAN_CHIP_CLASS = {
+  market_pulse:      "macro",
+  tech_slice:        "tech",
+  insider_cluster:   "insider",
+  options_unusual:   "options",
+  reg_sho:           "reg_sho",
+  material_8k:       "material",
+  sc_13dg:           "sc_13dg",
+  halt_tape:         "halt",
+  fundamentals_snap: "fundamentals",
+  rvol_stream:       "rvol",
+  news_catalyst:     "news",
+  xbrl_facts:        "xbrl_facts",
+};
+function _hexToRgb(hex) {
+  let h = (hex || "").replace("#", "");
+  if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  if (h.length !== 6) return "255,255,255";
+  return [0,2,4].map(i => parseInt(h.slice(i, i+2), 16)).join(",");
+}
+function applyScanColors(colors) {
+  const styleId = "scan-color-overrides";
+  let style = document.getElementById(styleId);
+  if (!style) {
+    style = document.createElement("style");
+    style.id = styleId;
+    document.head.appendChild(style);
+  }
+  const lines = [];
+  for (const [scanId, hex] of Object.entries(colors || {})) {
+    const cls = SCAN_CHIP_CLASS[scanId];
+    if (!cls) continue;
+    const rgb = _hexToRgb(hex);
+    lines.push(`.scan-tile.ok.scan-${scanId} { border-left-color: ${hex}; }`);
+    lines.push(`.chip.${cls} { color: ${hex}; border-color: rgba(${rgb},.35); background: rgba(${rgb},.08); }`);
+    lines.push(`.row .tag.${cls} { color: ${hex}; border-color: rgba(${rgb},.35); background: rgba(${rgb},.08); }`);
+    lines.push(`.ev[data-scan="${scanId}"] .msg { color: ${hex}; }`);
+    lines.push(`.ev[data-scan="${scanId}"] { border-left: 2px solid rgba(${rgb},.55); padding-left: 6px; }`);
+  }
+  style.textContent = lines.join("\n");
+}
+async function loadScanColors() {
+  try {
+    const r = await fetch("/api/scan-colors", { cache: "no-store" });
+    if (!r.ok) return;
+    const data = await r.json();
+    applyScanColors(data.colors || {});
+  } catch (e) { /* fall back to bundled CSS palette */ }
+}
+loadScanColors();
 function _sparkSVG(values) {
   if (!values || values.length < 2) {
     return '<svg class="spark" viewBox="0 0 60 16" preserveAspectRatio="none"></svg>';
@@ -839,13 +902,21 @@ function renderWatchlist(wl) {
   // poll cycle. Only the score/rank/spark/flash bits are updated
   // in-place; rows whose tag signature changed (or that are brand new)
   // get a full re-render.
+  //
+  // CRITICAL: never call ``replaceChildren`` or ``appendChild`` on an
+  // existing row to reorder it. Moving a DOM node detaches and
+  // re-inserts it, which resets every CSS animation on its subtree
+  // (including the .tags-track marquee). We use ``style.order`` on a
+  // flex column instead so rank changes shuffle visually with no DOM
+  // mutation.
   const existingRows = new Map();
   w.querySelectorAll(".row[data-ticker]").forEach(el => {
     existingRows.set(el.dataset.ticker, el);
   });
+  const liveSet = new Set();
 
-  const orderedNodes = [];
   for (const r of wl.slice(0, 10)) {
+    liveSet.add(r.ticker);
     const flashing = !firstLoad && prevWatchTs.has(r.ticker) && prevWatchTs.get(r.ticker) !== r.last_ts;
     const topClass = r.rank === 1 ? "top1" : r.rank <= 3 ? "top3" : "";
     const spark = _sparkSVG(sparkData.get(r.ticker));
@@ -860,12 +931,12 @@ function renderWatchlist(wl) {
         const cls = _scanChipClass(a.scan || "");
         const proposedCls = _proposedKeys.has(a.key) ? " proposed" : "";
         const label = (a.label || a.key || "").replace(/_/g, " ");
-        const title = `${a.scan || ""} · ${a.key || ""} · +${Number(a.points||0).toFixed(1)} pts${proposedCls ? " (proposed — triage in Attributes tab)" : ""}`;
+        const title = `${a.scan || ""} \u00b7 ${a.key || ""} \u00b7 +${Number(a.points||0).toFixed(1)} pts${proposedCls ? " (proposed \u2014 triage in Attributes tab)" : ""}`;
         return `<span class="tag ${cls}${proposedCls}" title="${title.replace(/"/g,'&quot;')}">${label}</span>`;
       });
     } else {
       const cls = _scanChipClass(r.last_scan || "");
-      const lbl = (r.last_scan || "—").replace(/_/g, " ");
+      const lbl = (r.last_scan || "\u2014").replace(/_/g, " ");
       const reason = (r.last_reason || "").replace(/</g, "&lt;").replace(/"/g,'&quot;');
       tagItems = [`<span class="tag ${cls}" title="${reason}">${lbl}</span>`];
     }
@@ -874,30 +945,31 @@ function renderWatchlist(wl) {
 
     const existing = existingRows.get(r.ticker);
     if (existing && existing.dataset.tagsSig === tagsHTML) {
-      // In-place update — preserve the .tags element (and its running
-      // animation) untouched.
+      // In-place update \u2014 preserve the .tags element (and its running
+      // animation) untouched. ``style.order`` shuffles position without
+      // DOM movement.
       existing.className = rowClass;
+      existing.style.order = String(r.rank);
       const rankEl  = existing.querySelector(".rank");
       const scoreEl = existing.querySelector(".score");
       if (rankEl)  rankEl.textContent  = r.rank;
       if (scoreEl) scoreEl.textContent = Number(r.score).toFixed(1);
       const sparkEl = existing.querySelector("svg.spark");
       if (sparkEl) {
-        // Replace sparkline only; cheap enough since svg is tiny.
         const wrap = document.createElement("template");
         wrap.innerHTML = spark.trim();
         const fresh = wrap.content.firstChild;
         if (fresh) sparkEl.replaceWith(fresh);
       }
-      orderedNodes.push(existing);
     } else {
+      // Tag set changed or brand-new ticker: rebuild the row. If a row
+      // already exists for this ticker (tag change), remove it first.
+      if (existing) existing.remove();
       const div = document.createElement("div");
       div.className = rowClass;
       div.dataset.ticker = r.ticker;
       div.dataset.tagsSig = tagsHTML;
-      // Duplicate the track once so the keyframe ``translateX(-50%)``
-      // loop is seamless; ``.scrolling`` is added in a post-render pass
-      // below only when the track overflows its container.
+      div.style.order = String(r.rank);
       div.innerHTML = `
         <span class="rank">${r.rank}</span>
         <span class="tk">${r.ticker}</span>
@@ -905,10 +977,13 @@ function renderWatchlist(wl) {
         ${spark}
         <div class="tags"><div class="tags-track">${tagsHTML}${tagsHTML}</div></div>
       `;
-      orderedNodes.push(div);
+      w.appendChild(div);
     }
   }
-  w.replaceChildren(...orderedNodes);
+  // Drop rows whose tickers fell off the top 10.
+  for (const [tk, el] of existingRows) {
+    if (!liveSet.has(tk)) el.remove();
+  }
   // Decide which rows need the marquee animation. We measure the
   // duplicated track: half its width is the "real" content width; if
   // that exceeds the container, enable the scroll and set a duration
@@ -1124,6 +1199,10 @@ function connectSSE() {
 
   es.addEventListener("weights", (ev) => {
     refreshProposedKeys();
+  });
+
+  es.addEventListener("colors", (ev) => {
+    loadScanColors();
   });
 
   es.addEventListener("error", () => {

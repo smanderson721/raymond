@@ -593,6 +593,73 @@ async def handle_catalyst_action(request: web.Request) -> web.Response:
     return web.json_response(fresh, headers={"Cache-Control": "no-store"})
 
 
+# ── per-scan colour overrides ─────────────────────────────────────────
+# Persisted to ``data/live/_scan_colors.json``. The dashboard fetches
+# this on load (and on every ``colors`` SSE event) and injects an
+# inline <style> override so users can re-skin individual scans without
+# editing the bundled stylesheet.
+SCAN_COLORS_FILE = os.path.join(REPO_ROOT, "data", "live", "_scan_colors.json")
+DEFAULT_SCAN_COLORS = {
+    "market_pulse":      "#fde047",
+    "tech_slice":        "#38bdf8",
+    "insider_cluster":   "#a78bfa",
+    "material_8k":       "#22c55e",
+    "sc_13dg":           "#06b6d4",
+    "halt_tape":         "#ef4444",
+    "rvol_stream":       "#84cc16",
+    "options_unusual":   "#f97316",
+    "reg_sho":           "#f43f5e",
+    "fundamentals_snap": "#d97706",
+    "xbrl_facts":        "#d946ef",
+    "news_catalyst":     "#6366f1",
+}
+
+
+def _read_scan_colors() -> dict:
+    try:
+        with open(SCAN_COLORS_FILE) as f:
+            blob = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        blob = {}
+    colors = dict(DEFAULT_SCAN_COLORS)
+    colors.update(blob.get("colors", {}))
+    return {"colors": colors,
+            "updated_at": blob.get("updated_at")}
+
+
+async def handle_get_colors(request: web.Request) -> web.Response:
+    return web.json_response(_read_scan_colors(),
+                             headers={"Cache-Control": "no-store"})
+
+
+async def handle_put_colors(request: web.Request) -> web.Response:
+    try:
+        payload = await request.json()
+    except Exception as e:
+        return web.json_response({"error": f"bad json: {e}"}, status=400)
+    incoming = payload.get("colors") if isinstance(payload, dict) else None
+    if not isinstance(incoming, dict):
+        return web.json_response({"error": "missing 'colors' object"}, status=400)
+    current = _read_scan_colors()["colors"]
+    for scan_id, hex_str in incoming.items():
+        if not isinstance(hex_str, str):
+            continue
+        h = hex_str.strip()
+        if not (h.startswith("#") and len(h) in (4, 7)):
+            continue
+        current[scan_id] = h
+    now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    os.makedirs(os.path.dirname(SCAN_COLORS_FILE), exist_ok=True)
+    tmp = f"{SCAN_COLORS_FILE}.{os.getpid()}.tmp"
+    with open(tmp, "w") as f:
+        json.dump({"colors": current, "updated_at": now_iso}, f, indent=2)
+    os.replace(tmp, SCAN_COLORS_FILE)
+    log.info("scan_colors updated via API (%d entries)", len(current))
+    await bus.publish("colors", {"updated_at": now_iso})
+    return web.json_response({"colors": current, "updated_at": now_iso},
+                             headers={"Cache-Control": "no-store"})
+
+
 @web.middleware
 async def cors_middleware(request: web.Request, handler):
     """Permissive CORS for the dashboard + the cross-origin Attributes editor
@@ -623,6 +690,8 @@ def build_app() -> web.Application:
     app.router.add_post("/api/run/{name}", handle_manual_run)
     app.router.add_get("/api/scan-weights", handle_get_weights)
     app.router.add_put("/api/scan-weights", handle_put_weights)
+    app.router.add_get("/api/scan-colors",  handle_get_colors)
+    app.router.add_put("/api/scan-colors",  handle_put_colors)
     app.router.add_post("/api/catalyst-action", handle_catalyst_action)
     app.router.add_get("/data/live/{name}", handle_live_file)
     # Also serve other static repo files (favicon etc.) on demand
