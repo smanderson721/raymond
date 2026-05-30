@@ -311,9 +311,13 @@ class Session:
             "watchlist": watchlist,
         })
 
-        # 5) status footer — append a row per scan
+        # 5) status footer — append a row per scan. We keep up to 20
+        # rows PER scan (not 200 globally) so daily/rare scans like
+        # ``reg_sho`` and ``xbrl_facts`` don't get evicted by chatty
+        # ones like ``halt_tape`` (every 2 min) and disappear from the
+        # scan strip as "never".
         status = _read(STATUS_FILE, {"runs": []})
-        status["runs"] = (status.get("runs", []) + [{
+        all_runs = status.get("runs", []) + [{
             "scan": self.scan,
             "started_at": self.started_at,
             "duration_sec": duration,
@@ -322,7 +326,20 @@ class Session:
             "hits": len(self._hits),
             "error": error,
             "note": self.note,
-        }])[-200:]
+        }]
+        # Keep last 20 runs per scan. Sort newest-first within each scan
+        # then keep the head, then flatten back into a list sorted by
+        # started_at ascending (the dashboard takes the latest per scan
+        # anyway, so order is mostly cosmetic).
+        per_scan = {}
+        for r in all_runs:
+            per_scan.setdefault(r.get("scan"), []).append(r)
+        trimmed = []
+        for scan_id, rows in per_scan.items():
+            rows.sort(key=lambda r: r.get("started_at", ""), reverse=True)
+            trimmed.extend(rows[:20])
+        trimmed.sort(key=lambda r: r.get("started_at", ""))
+        status["runs"] = trimmed
         status["updated_at"] = now_iso
         _write(STATUS_FILE, status)
 

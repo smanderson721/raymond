@@ -301,6 +301,10 @@
     overflow: hidden;
     position: relative;
     height: 18px;
+  }
+  /* Only apply the edge-fade mask while actually scrolling, otherwise
+     the leftmost tag of a stationary row looks awkwardly clipped. */
+  .row .tags.scrolling {
     -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
             mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
   }
@@ -796,7 +800,18 @@ function renderWatchlist(wl) {
   // garbage-collect tickers that fell off the watchlist
   for (const tk of [...sparkData.keys()]) if (!liveTickers.has(tk)) sparkData.delete(tk);
 
-  w.innerHTML = wl.slice(0, 10).map(r => {
+  // Reuse existing row DOM nodes when the tag content is unchanged so
+  // the marquee animation doesn't snap back to position 0 on every
+  // poll cycle. Only the score/rank/spark/flash bits are updated
+  // in-place; rows whose tag signature changed (or that are brand new)
+  // get a full re-render.
+  const existingRows = new Map();
+  w.querySelectorAll(".row[data-ticker]").forEach(el => {
+    existingRows.set(el.dataset.ticker, el);
+  });
+
+  const orderedNodes = [];
+  for (const r of wl.slice(0, 10)) {
     const flashing = !firstLoad && prevWatchTs.has(r.ticker) && prevWatchTs.get(r.ticker) !== r.last_ts;
     const topClass = r.rank === 1 ? "top1" : r.rank <= 3 ? "top3" : "";
     const spark = _sparkSVG(sparkData.get(r.ticker));
@@ -821,27 +836,56 @@ function renderWatchlist(wl) {
       tagItems = [`<span class="tag ${cls}" title="${reason}">${lbl}</span>`];
     }
     const tagsHTML = tagItems.join("");
-    // Duplicate the track once so the keyframe ``translateX(-50%)`` loop
-    // is seamless; ``.scrolling`` is added in a post-render pass below
-    // only when the track overflows its container.
-    return `
-      <div class="row ${topClass} ${flashing ? "flash" : ""}" data-ticker="${r.ticker}">
+    const rowClass = `row ${topClass} ${flashing ? "flash" : ""}`.replace(/\s+/g, " ").trim();
+
+    const existing = existingRows.get(r.ticker);
+    if (existing && existing.dataset.tagsSig === tagsHTML) {
+      // In-place update — preserve the .tags element (and its running
+      // animation) untouched.
+      existing.className = rowClass;
+      const rankEl  = existing.querySelector(".rank");
+      const scoreEl = existing.querySelector(".score");
+      if (rankEl)  rankEl.textContent  = r.rank;
+      if (scoreEl) scoreEl.textContent = Number(r.score).toFixed(1);
+      const sparkEl = existing.querySelector("svg.spark");
+      if (sparkEl) {
+        // Replace sparkline only; cheap enough since svg is tiny.
+        const wrap = document.createElement("template");
+        wrap.innerHTML = spark.trim();
+        const fresh = wrap.content.firstChild;
+        if (fresh) sparkEl.replaceWith(fresh);
+      }
+      orderedNodes.push(existing);
+    } else {
+      const div = document.createElement("div");
+      div.className = rowClass;
+      div.dataset.ticker = r.ticker;
+      div.dataset.tagsSig = tagsHTML;
+      // Duplicate the track once so the keyframe ``translateX(-50%)``
+      // loop is seamless; ``.scrolling`` is added in a post-render pass
+      // below only when the track overflows its container.
+      div.innerHTML = `
         <span class="rank">${r.rank}</span>
         <span class="tk">${r.ticker}</span>
         <span class="score">${Number(r.score).toFixed(1)}</span>
         ${spark}
         <div class="tags"><div class="tags-track">${tagsHTML}${tagsHTML}</div></div>
-      </div>
-    `;
-  }).join("");
+      `;
+      orderedNodes.push(div);
+    }
+  }
+  w.replaceChildren(...orderedNodes);
   // Decide which rows need the marquee animation. We measure the
   // duplicated track: half its width is the "real" content width; if
   // that exceeds the container, enable the scroll and set a duration
-  // proportional to length (≈ 30 px/sec).
+  // proportional to length (≈ 30 px/sec). Skip rows whose .scrolling
+  // class is already set with a non-empty animationDuration — they
+  // were preserved from a prior render and are mid-animation.
   requestAnimationFrame(() => {
     w.querySelectorAll(".row .tags").forEach(box => {
       const track = box.querySelector(".tags-track");
       if (!track) return;
+      if (box.classList.contains("scrolling") && track.style.animationDuration) return;
       const realW = track.scrollWidth / 2;
       if (realW > box.clientWidth + 4) {
         const dur = Math.max(8, Math.round(realW / 30));
@@ -932,9 +976,22 @@ async function poll() {
     center.className = macro.label_key;
     lbl.textContent  = macro.label || macro.label_key;
     sc.textContent   = `${(macro.health_score ?? 0).toFixed(0)} / 100  ·  ×${macro.multiplier}`;
-    const tagHtml = t => `<span class="pulse-tag">${t}</span>`;
-    lt.innerHTML = (macro.left_tags  || []).map(tagHtml).join("");
-    rt.innerHTML = (macro.right_tags || []).map(tagHtml).join("");
+    // Hide "steady"-state macro tags that carry no signal (USD steady,
+    // no recent surprises). Also attach an explanatory tooltip to the
+    // ``breadth N/11`` tag so the operator knows N = sector ETFs above
+    // their 50-day moving average (out of 11 SPDR sectors).
+    const _isIdleTag = t => {
+      const s = (t || "").toLowerCase().trim();
+      return s === "usd steady" || s === "no recent surprises" || s === "usd —";
+    };
+    const tagHtml = t => {
+      const tip = /^breadth\s+\d+\/\d+$/i.test(t)
+        ? ` title="Sector ETFs above their 50-day SMA, out of 11 SPDR sectors (XLE, XLF, XLI, XLK, XLP, XLU, XLV, XLY, XLB, XLRE, XLC)"`
+        : "";
+      return `<span class="pulse-tag"${tip}>${t}</span>`;
+    };
+    lt.innerHTML = (macro.left_tags  || []).filter(t => !_isIdleTag(t)).map(tagHtml).join("");
+    rt.innerHTML = (macro.right_tags || []).filter(t => !_isIdleTag(t)).map(tagHtml).join("");
     document.getElementById("f-macro").textContent =
       `${macro.label || macro.label_key} · ${(macro.health_score ?? 0).toFixed(0)}/100 (VIX ${macro.vix_level ?? "—"})`;
     if (_prevPulseLabel !== null && _prevPulseLabel !== macro.label_key) {
@@ -953,7 +1010,11 @@ async function poll() {
       document.getElementById("f-last").textContent =
         `${last.scan} (${fmtTs(last.started_at)} · ${last.duration_sec}s · ${last.events}ev/${last.awards}aw)`;
     }
-    const errs = runs.filter(r => r.error).length;
+    // Only count errors from the last 6 hours so a one-off failure
+    // (a transient API blip, a deploy-time module-missing run) doesn't
+    // permanently red-flag the footer until the 200-run window rolls over.
+    const sixHoursAgo = Date.now() - 6 * 3600 * 1000;
+    const errs = runs.filter(r => r.error && Date.parse(r.started_at) > sixHoursAgo).length;
     const f = document.getElementById("f-status");
     if (errs > 0) { f.textContent = `${errs} recent errors`; f.className = "err"; }
     else { f.textContent = "live"; f.className = "ok"; }
