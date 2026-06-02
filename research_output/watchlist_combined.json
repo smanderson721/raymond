@@ -1,807 +1,847 @@
 {
-  "generated_at": "2026-05-30T05:33:19.959077+00:00",
+  "generated_at": "2026-06-02T05:21:24.508646+00:00",
   "window_days": 14,
-  "count": 120,
+  "count": 132,
   "tickers": [
     {
       "ticker": "SERV",
       "best_bup": 89.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "SHPH",
-      "best_bup": 86.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup": 87.27,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "AD",
       "best_bup": 80.27,
       "best_bup_date": "2026-05-30",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "CYCU",
       "best_bup": 80.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "GCTK",
       "best_bup": 80.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-21",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "IREN",
       "best_bup": 78.68,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "LLY",
-      "best_bup": 76.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup": 76.26,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "BLSH",
-      "best_bup": 70.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup": 72.0,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "PGYWW",
       "best_bup": 69.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "VSECU",
       "best_bup": 68.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "SSM",
       "best_bup": 67.27,
       "best_bup_date": "2026-05-29",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "TOMZ",
       "best_bup": 67.26,
       "best_bup_date": "2026-05-27",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "GIG",
       "best_bup": 67.0,
       "best_bup_date": "2026-05-27",
-      "first_seen": "2026-05-19",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "days_in_list": 7
     },
     {
-      "ticker": "INAB",
-      "best_bup": 67.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "ticker": "GRND",
+      "best_bup": 66.0,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "OPENZ",
       "best_bup": 66.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
+      "days_in_list": 8
+    },
+    {
+      "ticker": "INAB",
+      "best_bup": 65.59,
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "KPLT",
       "best_bup": 65.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
-      "days_in_list": 8
-    },
-    {
-      "ticker": "GRND",
-      "best_bup": 64.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "NAKA",
       "best_bup": 64.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-21",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "VTIX",
       "best_bup": 63.0,
       "best_bup_date": "2026-05-22",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "USEG",
       "best_bup": 62.55,
       "best_bup_date": "2026-05-22",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
+      "days_in_list": 8
+    },
+    {
+      "ticker": "BCDA",
+      "best_bup": 61.59,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "CETY",
-      "best_bup": 62.27,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup": 61.55,
+      "best_bup_date": "2026-05-21",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "JYNT",
       "best_bup": 61.55,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "AVTX",
       "best_bup": 60.64,
       "best_bup_date": "2026-05-30",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
-      "days_in_list": 8
-    },
-    {
-      "ticker": "BCDA",
-      "best_bup": 60.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "GPGI",
       "best_bup": 60.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "VSEC",
       "best_bup": 60.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "YMAT",
       "best_bup": 59.8,
       "best_bup_date": "2026-05-22",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
-      "days_in_list": 8
-    },
-    {
-      "ticker": "MBRX",
-      "best_bup": 58.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "RHLD",
       "best_bup": 58.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "IPW",
       "best_bup": 57.0,
       "best_bup_date": "2026-05-21",
-      "first_seen": "2026-05-19",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "days_in_list": 7
     },
     {
       "ticker": "MP",
       "best_bup": 57.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "PAR",
-      "best_bup": 56.76,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup": 56.55,
+      "best_bup_date": "2026-05-22",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "KG",
       "best_bup": 56.26,
       "best_bup_date": "2026-05-28",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "BBIO",
       "best_bup": 56.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "NWS",
       "best_bup": 56.0,
       "best_bup_date": "2026-05-21",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "PFSA",
       "best_bup": 56.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "RKT",
       "best_bup": 56.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
+      "days_in_list": 8
+    },
+    {
+      "ticker": "NTRP",
+      "best_bup": 55.84,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "STRL",
       "best_bup": 55.58,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
+      "days_in_list": 8
+    },
+    {
+      "ticker": "ALGS",
+      "best_bup": 55.27,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "BIYA",
       "best_bup": 55.0,
       "best_bup_date": "2026-05-21",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 6
     },
     {
       "ticker": "CRWV",
       "best_bup": 55.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "EZRA",
       "best_bup": 55.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "OPENL",
       "best_bup": 55.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "OPENW",
       "best_bup": 55.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "days_in_list": 7
     },
     {
       "ticker": "PGY",
       "best_bup": 55.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "FUN",
       "best_bup": 54.68,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
+      "days_in_list": 8
+    },
+    {
+      "ticker": "MBRX",
+      "best_bup": 54.54,
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "BTBD",
       "best_bup": 54.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "GIGGW",
       "best_bup": 54.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "days_in_list": 7
     },
     {
       "ticker": "HAWK",
       "best_bup": 54.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "MTEK",
       "best_bup": 54.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "NEXR",
       "best_bup": 54.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
+      "days_in_list": 7
+    },
+    {
+      "ticker": "POST",
+      "best_bup": 54.0,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "MORN",
       "best_bup": 53.27,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
+    },
+    {
+      "ticker": "AIIO",
+      "best_bup": 53.1,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-28",
+      "last_seen": "2026-06-02",
+      "days_in_list": 4
     },
     {
       "ticker": "AEIS",
       "best_bup": 53.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
-      "days_in_list": 8
-    },
-    {
-      "ticker": "ALGS",
-      "best_bup": 53.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "CABO",
       "best_bup": 53.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "COLL",
       "best_bup": 53.0,
       "best_bup_date": "2026-05-29",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
-      "days_in_list": 8
-    },
-    {
-      "ticker": "CTXR",
-      "best_bup": 53.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
-      "days_in_list": 8
-    },
-    {
-      "ticker": "CURX",
-      "best_bup": 53.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "FFAI",
       "best_bup": 53.0,
       "best_bup_date": "2026-05-27",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
-      "days_in_list": 8
-    },
-    {
-      "ticker": "NTRP",
-      "best_bup": 53.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "ORIO",
       "best_bup": 53.0,
       "best_bup_date": "2026-05-21",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "XXII",
       "best_bup": 53.0,
       "best_bup_date": "2026-05-29",
-      "first_seen": "2026-05-19",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "days_in_list": 7
+    },
+    {
+      "ticker": "OSS",
+      "best_bup": 52.3,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
     },
     {
       "ticker": "ENTX",
       "best_bup": 52.17,
       "best_bup_date": "2026-05-28",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "ABTS",
       "best_bup": 52.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-21",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
+      "days_in_list": 7
+    },
+    {
+      "ticker": "CURX",
+      "best_bup": 52.0,
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "HTOO",
       "best_bup": 52.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-28",
-      "days_in_list": 6
+      "days_in_list": 5
     },
     {
       "ticker": "HWH",
       "best_bup": 52.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "PRTA",
       "best_bup": 52.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "SPB",
       "best_bup": 52.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "NCT",
       "best_bup": 51.76,
       "best_bup_date": "2026-05-28",
-      "first_seen": "2026-05-19",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 7
+      "days_in_list": 6
     },
     {
       "ticker": "ARCT",
       "best_bup": 51.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "days_in_list": 7
     },
     {
       "ticker": "BACCR",
       "best_bup": 51.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "days_in_list": 7
     },
     {
       "ticker": "BIAF",
       "best_bup": 51.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-21",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "GELS",
       "best_bup": 51.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-29",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 7
     },
     {
       "ticker": "SSII",
       "best_bup": 51.0,
       "best_bup_date": "2026-05-27",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "WHLR",
       "best_bup": 51.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 6
+      "days_in_list": 5
     },
     {
-      "ticker": "INM",
-      "best_bup": 50.84,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-19",
-      "days_in_list": 1
+      "ticker": "CTXR",
+      "best_bup": 50.76,
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
+      "days_in_list": 8
     },
     {
       "ticker": "DCH",
       "best_bup": 50.76,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "VTGN",
       "best_bup": 50.76,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-28",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
+    },
+    {
+      "ticker": "LXRX",
+      "best_bup": 50.61,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
     },
     {
       "ticker": "SHOP",
       "best_bup": 50.55,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "days_in_list": 7
     },
     {
-      "ticker": "ANY",
-      "best_bup": 50.42,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "ticker": "MRNO",
+      "best_bup": 50.46,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
     },
     {
       "ticker": "CPOP",
       "best_bup": 50.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-27",
-      "days_in_list": 5
+      "days_in_list": 4
     },
     {
       "ticker": "KTB",
       "best_bup": 50.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
+    },
+    {
+      "ticker": "CNCK",
+      "best_bup": 49.76,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-22",
+      "last_seen": "2026-06-02",
+      "days_in_list": 5
     },
     {
       "ticker": "SOUN",
       "best_bup": 49.76,
       "best_bup_date": "2026-05-27",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
-      "ticker": "FTFT",
-      "best_bup": 49.59,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "ticker": "ANY",
+      "best_bup": 49.61,
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "ENGN",
       "best_bup": 49.55,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "days_in_list": 7
     },
     {
       "ticker": "CELH",
       "best_bup": 49.27,
       "best_bup_date": "2026-05-21",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
-      "ticker": "YELP",
+      "ticker": "FTFT",
       "best_bup": 49.27,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
+      "days_in_list": 7
+    },
+    {
+      "ticker": "OFAL",
+      "best_bup": 49.27,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "BTOC",
       "best_bup": 49.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-21",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 3
     },
     {
       "ticker": "CLIK",
       "best_bup": 49.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-22",
-      "days_in_list": 4
+      "days_in_list": 3
     },
     {
       "ticker": "COF",
       "best_bup": 49.0,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
+    },
+    {
+      "ticker": "ENGNW",
+      "best_bup": 49.0,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
     },
     {
       "ticker": "HKIT",
       "best_bup": 49.0,
       "best_bup_date": "2026-05-28",
-      "first_seen": "2026-05-19",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "days_in_list": 7
     },
     {
-      "ticker": "AIIO",
-      "best_bup": 48.62,
-      "best_bup_date": "2026-05-30",
+      "ticker": "KDK",
+      "best_bup": 49.0,
+      "best_bup_date": "2026-06-02",
       "first_seen": "2026-05-28",
-      "last_seen": "2026-05-30",
-      "days_in_list": 3
+      "last_seen": "2026-06-02",
+      "days_in_list": 4
+    },
+    {
+      "ticker": "YELP",
+      "best_bup": 49.0,
+      "best_bup_date": "2026-05-22",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
+      "days_in_list": 8
     },
     {
       "ticker": "IIIV",
       "best_bup": 48.59,
       "best_bup_date": "2026-05-20",
-      "first_seen": "2026-05-19",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "days_in_list": 7
     },
     {
       "ticker": "ADTX",
       "best_bup": 48.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-30",
-      "days_in_list": 8
-    },
-    {
-      "ticker": "CCLD",
-      "best_bup": 48.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-19",
-      "days_in_list": 1
+      "days_in_list": 7
     },
     {
       "ticker": "DVN",
       "best_bup": 48.0,
       "best_bup_date": "2026-05-27",
       "first_seen": "2026-05-22",
-      "last_seen": "2026-05-30",
-      "days_in_list": 5
-    },
-    {
-      "ticker": "OFAL",
-      "best_bup": 48.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
-      "days_in_list": 8
-    },
-    {
-      "ticker": "POST",
-      "best_bup": 48.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
-      "days_in_list": 8
+      "last_seen": "2026-06-02",
+      "days_in_list": 6
     },
     {
       "ticker": "VYX",
       "best_bup": 48.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-28",
-      "days_in_list": 6
+      "days_in_list": 5
     },
     {
-      "ticker": "CNCK",
-      "best_bup": 47.55,
-      "best_bup_date": "2026-05-30",
+      "ticker": "UBER",
+      "best_bup": 47.76,
+      "best_bup_date": "2026-06-02",
       "first_seen": "2026-05-22",
-      "last_seen": "2026-05-30",
-      "days_in_list": 4
+      "last_seen": "2026-06-02",
+      "days_in_list": 5
     },
     {
       "ticker": "HXHX",
       "best_bup": 47.27,
       "best_bup_date": "2026-05-20",
       "first_seen": "2026-05-20",
-      "last_seen": "2026-05-29",
-      "days_in_list": 3
+      "last_seen": "2026-06-02",
+      "days_in_list": 4
+    },
+    {
+      "ticker": "NXST",
+      "best_bup": 47.27,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
     },
     {
       "ticker": "WW",
@@ -812,11 +852,11 @@
       "days_in_list": 2
     },
     {
-      "ticker": "GENVR",
-      "best_bup": 47.14,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-19",
+      "ticker": "BNRG",
+      "best_bup": 47.0,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
       "days_in_list": 1
     },
     {
@@ -844,12 +884,20 @@
       "days_in_list": 1
     },
     {
-      "ticker": "KDK",
+      "ticker": "FCUV",
       "best_bup": 47.0,
-      "best_bup_date": "2026-05-28",
-      "first_seen": "2026-05-28",
-      "last_seen": "2026-05-30",
-      "days_in_list": 3
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
+    },
+    {
+      "ticker": "HUDI",
+      "best_bup": 47.0,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
     },
     {
       "ticker": "NCPL",
@@ -862,34 +910,34 @@
     {
       "ticker": "RMTI",
       "best_bup": 47.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-27",
+      "first_seen": "2026-05-27",
+      "last_seen": "2026-06-02",
       "days_in_list": 5
     },
     {
-      "ticker": "UBER",
+      "ticker": "TKLF",
       "best_bup": 47.0,
-      "best_bup_date": "2026-05-27",
-      "first_seen": "2026-05-22",
-      "last_seen": "2026-05-30",
-      "days_in_list": 4
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
     },
     {
       "ticker": "VEL",
       "best_bup": 47.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
-      "last_seen": "2026-05-30",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
+      "last_seen": "2026-06-02",
       "days_in_list": 8
     },
     {
       "ticker": "VMAR",
       "best_bup": 47.0,
-      "best_bup_date": "2026-05-19",
-      "first_seen": "2026-05-19",
+      "best_bup_date": "2026-05-20",
+      "first_seen": "2026-05-20",
       "last_seen": "2026-05-28",
-      "days_in_list": 4
+      "days_in_list": 3
     },
     {
       "ticker": "XMTR",
@@ -901,19 +949,27 @@
     },
     {
       "ticker": "TTMI",
-      "best_bup": 46.39,
-      "best_bup_date": "2026-05-30",
+      "best_bup": 46.54,
+      "best_bup_date": "2026-06-02",
       "first_seen": "2026-05-30",
-      "last_seen": "2026-05-30",
-      "days_in_list": 1
+      "last_seen": "2026-06-02",
+      "days_in_list": 2
     },
     {
       "ticker": "AEI",
       "best_bup": 46.0,
       "best_bup_date": "2026-05-27",
       "first_seen": "2026-05-27",
-      "last_seen": "2026-05-30",
-      "days_in_list": 2
+      "last_seen": "2026-06-02",
+      "days_in_list": 3
+    },
+    {
+      "ticker": "BIAFW",
+      "best_bup": 46.0,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
     },
     {
       "ticker": "ELOG",
@@ -944,16 +1000,24 @@
       "best_bup": 46.0,
       "best_bup_date": "2026-05-28",
       "first_seen": "2026-05-28",
-      "last_seen": "2026-05-29",
-      "days_in_list": 2
+      "last_seen": "2026-06-02",
+      "days_in_list": 3
     },
     {
       "ticker": "SWAGW",
       "best_bup": 46.0,
       "best_bup_date": "2026-05-21",
       "first_seen": "2026-05-21",
-      "last_seen": "2026-05-30",
-      "days_in_list": 4
+      "last_seen": "2026-06-02",
+      "days_in_list": 5
+    },
+    {
+      "ticker": "WCT",
+      "best_bup": 46.0,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
     },
     {
       "ticker": "WGRX",
@@ -962,6 +1026,38 @@
       "first_seen": "2026-05-27",
       "last_seen": "2026-05-28",
       "days_in_list": 2
+    },
+    {
+      "ticker": "WHLRL",
+      "best_bup": 46.0,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
+    },
+    {
+      "ticker": "WOK",
+      "best_bup": 46.0,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
+    },
+    {
+      "ticker": "RKLB",
+      "best_bup": 45.52,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
+    },
+    {
+      "ticker": "OWLT",
+      "best_bup": 45.26,
+      "best_bup_date": "2026-06-02",
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "days_in_list": 1
     }
   ]
 }
