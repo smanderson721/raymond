@@ -13,7 +13,7 @@ import argparse
 import json
 import sys
 
-from agent import alpaca_client, decide, journal
+from agent import alpaca_client, decide, journal, outcomes_tracker, reflect, shadow_ledger
 
 
 def cmd_decide(args):
@@ -33,6 +33,21 @@ def cmd_account(args):
     }, indent=2, default=str))
 
 
+def cmd_outcomes(args):
+    summary = outcomes_tracker.run_batch(dry_run=args.dry_run)
+    print(json.dumps(summary, indent=2, default=str))
+
+
+def cmd_reflect(args):
+    summary = reflect.run_batch(dry_run=args.dry_run)
+    print(json.dumps(summary, indent=2, default=str))
+
+
+def cmd_shadow(args):
+    summary = shadow_ledger.run_batch(dry_run=args.dry_run)
+    print(json.dumps(summary, indent=2, default=str))
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="agent")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -47,6 +62,18 @@ def main(argv: list[str] | None = None) -> int:
 
     pa = sub.add_parser("account", help="show Alpaca paper account state")
     pa.set_defaults(func=cmd_account)
+
+    po = sub.add_parser("outcomes", help="track PnL of open positions")
+    po.add_argument("--dry-run", action="store_true")
+    po.set_defaults(func=cmd_outcomes)
+
+    pr = sub.add_parser("reflect", help="nightly retrospective + playbook update")
+    pr.add_argument("--dry-run", action="store_true")
+    pr.set_defaults(func=cmd_reflect)
+
+    ps = sub.add_parser("shadow", help="mechanical baseline ledger")
+    ps.add_argument("--dry-run", action="store_true")
+    ps.set_defaults(func=cmd_shadow)
 
     args = p.parse_args(argv)
     args.func(args)

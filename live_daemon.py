@@ -241,6 +241,9 @@ SCHEDULES: list[Scan] = [
     Scan("xbrl_facts",       "research.scans.xbrl_facts",       daily_at(14, 0),                           "EDGAR 10-Q/10-K XBRL refresh"),
     Scan("news_catalyst",   "research.scans.news_catalyst",   every_n_minutes(10, offset=3),             "Alpaca News + Gemini catalyst classifier"),
     Scan("agent_decide",   "research.scans.agent_decide",   market_hours_every_n_min(5),                  "trading-agent v1 (paper)"),
+    Scan("agent_outcomes", "research.scans.agent_outcomes", market_hours_every_n_min(15),                 "trading-agent outcomes/PnL tracker"),
+    Scan("agent_shadow",   "research.scans.agent_shadow",   daily_at(20, 30),                             "trading-agent shadow baseline (daily)"),
+    Scan("agent_reflect",  "research.scans.agent_reflect",  daily_at(21, 30),                             "trading-agent nightly retrospective"),
     # macro_econ folded into market_pulse on 2026-05-29
 ]
 
@@ -736,6 +739,24 @@ async def handle_agent_run(request: web.Request) -> web.Response:
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 
+async def handle_agent_shadow(request: web.Request) -> web.Response:
+    try:
+        from agent import journal as agent_journal
+    except Exception as e:
+        return web.json_response({"error": f"agent not installed: {e}"}, status=503)
+    try:
+        stats = await asyncio.to_thread(agent_journal.shadow_stats)
+        with agent_journal.connect() as c:
+            rows = c.execute(
+                "SELECT * FROM shadow_trades ORDER BY ts_entry DESC LIMIT 100"
+            ).fetchall()
+            trades = [dict(r) for r in rows]
+        return web.json_response(
+            {"stats": stats, "trades": trades},
+            headers={"Cache-Control": "no-store"},
+        )
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
 
 # ── app wiring ─────────────────────────────────────────────────────────
 def build_app() -> web.Application:
@@ -753,6 +774,7 @@ def build_app() -> web.Application:
     app.router.add_post("/api/catalyst-action", handle_catalyst_action)
     app.router.add_get("/api/agent-journal", handle_agent_journal)
     app.router.add_get("/api/agent-account", handle_agent_account)
+    app.router.add_get("/api/agent-shadow",  handle_agent_shadow)
     app.router.add_post("/api/agent-run", handle_agent_run)
     app.router.add_get("/data/live/{name}", handle_live_file)
     # Also serve other static repo files (favicon etc.) on demand

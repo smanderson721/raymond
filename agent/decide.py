@@ -35,7 +35,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 import config  # noqa: E402
 
-from agent import alpaca_client, gemini_client, journal  # noqa: E402
+from agent import alpaca_client, episodes, gemini_client, journal  # noqa: E402
 
 WATCHLIST_FILE      = REPO_ROOT / "research_output" / "watchlist_combined.json"
 SCAN_RESULTS_FILE   = REPO_ROOT / "research_output" / "scan_results.json"
@@ -156,12 +156,23 @@ def _decide_one(ticker: str, wl_row: dict, scan_map: dict, cat_map: dict,
         return {"ticker": ticker, "action": "SKIP", "decision_id": decision_id}
 
     ctx = _build_context(ticker, wl_row, scan_info, catalyst, position)
+    ep  = episodes.episode_block(ticker, ctx)
 
     try:
-        out = gemini_client.decide(ticker, ctx)
+        proposal = gemini_client.decide(ticker, ctx, episodes=ep)
     except Exception as e:
         logger(f"  {ticker}: gemini error: {e}")
         return {"ticker": ticker, "error": str(e)}
+
+    try:
+        verdict = gemini_client.critique(ticker, proposal, ctx, episodes=ep)
+    except Exception as e:
+        logger(f"  {ticker}: critic error (failing open): {e}")
+        verdict = {"verdict": "APPROVE", "concern": str(e), "downgrade_to": ""}
+
+    out = gemini_client.apply_verdict(proposal, verdict)
+    if verdict.get("verdict") != "APPROVE":
+        logger(f"  {ticker}: critic {verdict.get('verdict')} → {out['action']}")
 
     action    = out["action"]
     size_pct  = out["size_pct"]
