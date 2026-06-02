@@ -240,6 +240,7 @@ SCHEDULES: list[Scan] = [
     Scan("fundamentals_snap", "research.scans.fundamentals_snap", every_n_minutes(15, offset=12),           "broad-universe fundamentals slice (~400/run, full cycle ~3.5h)"),
     Scan("xbrl_facts",       "research.scans.xbrl_facts",       daily_at(14, 0),                           "EDGAR 10-Q/10-K XBRL refresh"),
     Scan("news_catalyst",   "research.scans.news_catalyst",   every_n_minutes(10, offset=3),             "Alpaca News + Gemini catalyst classifier"),
+    Scan("agent_decide",   "research.scans.agent_decide",   market_hours_every_n_min(5),                  "trading-agent v1 (paper)"),
     # macro_econ folded into market_pulse on 2026-05-29
 ]
 
@@ -679,6 +680,63 @@ async def cors_middleware(request: web.Request, handler):
     return resp
 
 
+# ── trading-agent endpoints ───────────────────────────────────────────
+async def handle_agent_journal(request: web.Request) -> web.Response:
+    try:
+        from agent import journal as agent_journal
+    except Exception as e:
+        return web.json_response(
+            {"entries": [], "playbook": "", "error": f"agent not installed: {e}"},
+            status=503, headers={"Cache-Control": "no-store"},
+        )
+    try:
+        limit = max(1, min(int(request.query.get("limit", "400")), 1000))
+    except Exception:
+        limit = 400
+    try:
+        payload = await asyncio.to_thread(agent_journal.journal_payload, limit)
+    except Exception as e:
+        return web.json_response(
+            {"entries": [], "playbook": "", "error": str(e)},
+            status=500, headers={"Cache-Control": "no-store"},
+        )
+    return web.json_response(payload, headers={"Cache-Control": "no-store"})
+
+
+async def handle_agent_account(request: web.Request) -> web.Response:
+    try:
+        from agent import alpaca_client
+    except Exception as e:
+        return web.json_response({"error": f"agent not installed: {e}"}, status=503)
+    try:
+        acct = await asyncio.to_thread(alpaca_client.get_account)
+        positions = await asyncio.to_thread(alpaca_client.list_positions)
+        return web.json_response({
+            "is_paper":  alpaca_client.is_paper(),
+            "account":   acct,
+            "positions": positions,
+        }, headers={"Cache-Control": "no-store"})
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
+async def handle_agent_run(request: web.Request) -> web.Response:
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    dry_run = bool(body.get("dry_run", True))  # default dry-run for safety
+    try:
+        from agent import decide
+    except Exception as e:
+        return web.json_response({"error": f"agent not installed: {e}"}, status=503)
+    try:
+        summary = await asyncio.to_thread(decide.run_batch, dry_run)
+        return web.json_response(summary, headers={"Cache-Control": "no-store"})
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
 # ── app wiring ─────────────────────────────────────────────────────────
 def build_app() -> web.Application:
     app = web.Application(middlewares=[cors_middleware])
@@ -693,6 +751,9 @@ def build_app() -> web.Application:
     app.router.add_get("/api/scan-colors",  handle_get_colors)
     app.router.add_put("/api/scan-colors",  handle_put_colors)
     app.router.add_post("/api/catalyst-action", handle_catalyst_action)
+    app.router.add_get("/api/agent-journal", handle_agent_journal)
+    app.router.add_get("/api/agent-account", handle_agent_account)
+    app.router.add_post("/api/agent-run", handle_agent_run)
     app.router.add_get("/data/live/{name}", handle_live_file)
     # Also serve other static repo files (favicon etc.) on demand
     return app
