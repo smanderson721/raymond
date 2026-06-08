@@ -256,11 +256,12 @@ def _register_proposed(prop_id: str, prop_name: str, prop_desc: str,
         write_weights(data)
         return best_key, False
 
-    # genuinely new proposal
+    # genuinely new proposal — auto-accept (status: active) so operator
+    # doesn't need to manually approve each one in the Attributes tab
     attrs[prop_id] = {
         "points": DEFAULT_PROPOSED_POINTS,
         "description": prop_desc[:240] or prop_name[:240] or "Gemini-proposed catalyst",
-        "status": "proposed",
+        "status": "active",
         "proposed_name": prop_name[:80] or prop_id.replace("_", " ").title(),
         "first_seen": _now_iso(),
         "last_seen": _now_iso(),
