@@ -32,6 +32,17 @@ SCAN_NAME = "tech_slice"
 CURSOR_FILE = os.path.join(LIVE_DIR, "_slice_cursor.json")
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SCAN_FILE = os.path.join(REPO_ROOT, "research_output", "scan_results.json")
+# Broad-universe price snapshot accumulated across slice runs. Each
+# slice refreshes ~400 tickers; the full universe is covered every
+# ~3.6 hours. The performer-ranker scan reads this file to rank the
+# entire market by trailing 30-day return and award attribute bonuses
+# to top-tier entrants.
+BROAD_PRICES_FILE = os.path.join(LIVE_DIR, "_broad_prices.json")
+# Stale entries are pruned from the broad price file when they're
+# older than this. Long enough that a full cycle (~3.6h) never strands
+# a ticker, short enough that a yfinance failure for a ticker drops it
+# from the ranking within a few days.
+BROAD_PRICE_TTL_SEC = 3 * 24 * 3600   # 3 days
 
 SLICE_SIZE = 400
 BATCH = 80          # yfinance batch size within the slice
@@ -109,6 +120,9 @@ def _features(df: pd.DataFrame) -> dict:
     pct_1d = float(c.iloc[-1] / c.iloc[-2] - 1) if len(c) >= 2 else 0.0
     pct_5d = float(c.iloc[-1] / c.iloc[-6] - 1) if len(c) >= 6 else 0.0
     pct_20d = float(c.iloc[-1] / c.iloc[-21] - 1) if len(c) >= 21 else 0.0
+    # ~22 trading days = ~30 calendar days. Used by the performer-ranker
+    # scan to sort the entire universe by trailing-month return.
+    pct_30d = float(c.iloc[-1] / c.iloc[-22] - 1) if len(c) >= 22 else None
 
     sma20 = float(c.tail(20).mean())
     sma50 = float(c.tail(50).mean()) if len(c) >= 50 else None
@@ -158,6 +172,7 @@ def _features(df: pd.DataFrame) -> dict:
         "pct_1d": pct_1d,
         "pct_5d": pct_5d,
         "pct_20d": pct_20d,
+        "pct_30d": pct_30d,
         "sma20": sma20,
         "sma50": sma50,
         "high20": high20,
@@ -294,6 +309,53 @@ def _yf_batch(symbols: list[str]) -> dict:
     return out
 
 
+def _update_broad_prices(batch_features: dict, now_ts: float, now_iso: str) -> None:
+    """Merge a batch's worth of (ticker → features) into the broad price
+    snapshot file. Each batch updates ~80 tickers; the file accumulates
+    across slice runs until the full universe (~6000) is covered, then
+    re-refreshes on the next pass.
+
+    Only ``price`` and ``pct_30d`` are stored (kept lean: ~50 bytes per
+    ticker × 6000 tickers ≈ 300 KB). Stale entries older than
+    ``BROAD_PRICE_TTL_SEC`` are pruned on every write so failed lookups
+    don't linger in the ranking forever.
+    """
+    if not batch_features:
+        return
+    blob = _read(BROAD_PRICES_FILE, {"updated_at": "", "tickers": {}})
+    tickers = blob.get("tickers") or {}
+    for tk, feats in batch_features.items():
+        if not feats:
+            continue
+        pct_30d = feats.get("pct_30d")
+        if pct_30d is None:
+            continue
+        try:
+            pct_30d_f = float(pct_30d)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(pct_30d_f):
+            continue
+        price = feats.get("price")
+        try:
+            price_f = float(price) if price is not None else None
+        except (TypeError, ValueError):
+            price_f = None
+        tickers[tk.upper()] = {
+            "price": price_f,
+            "pct_30d": round(pct_30d_f, 5),
+            "fetched_ts": now_ts,
+        }
+    # prune stale entries
+    cutoff = now_ts - BROAD_PRICE_TTL_SEC
+    tickers = {tk: row for tk, row in tickers.items()
+               if float(row.get("fetched_ts", 0) or 0) >= cutoff}
+    blob["tickers"] = tickers
+    blob["updated_at"] = now_iso
+    blob["universe_size"] = len(tickers)
+    _write(BROAD_PRICES_FILE, blob)
+
+
 def run() -> dict:
     universe = _load_universe()
     if not universe:
@@ -318,6 +380,7 @@ def run() -> dict:
         for i in range(0, len(slice_), BATCH):
             batch = slice_[i:i + BATCH]
             frames = _yf_batch(batch)
+            batch_feats: dict[str, dict] = {}
             for tk in batch:
                 df = frames.get(tk)
                 if df is None or len(df) < 30:
@@ -327,10 +390,19 @@ def run() -> dict:
                 f = _features(df)
                 if not f:
                     continue
+                batch_feats[tk] = f
                 hits = _evaluate(tk, f, mult)
                 for pts, reason, attr_key in hits:
                     s.award(tk, pts, reason, attr_key=attr_key)
                     awards += 1
+            # persist this batch's pct_30d / price snapshot into the
+            # broad-universe ranking file consumed by performer_ranker.
+            if batch_feats:
+                _update_broad_prices(
+                    batch_feats,
+                    datetime.now(timezone.utc).timestamp(),
+                    datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                )
 
         s.log(f"slice done — ok={ok} fail={fail} awards={awards}")
 

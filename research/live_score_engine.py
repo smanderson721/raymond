@@ -34,6 +34,14 @@ EVENTS_FILE = os.path.join(LIVE_DIR, "events.json")
 HITS_FILE = os.path.join(LIVE_DIR, "hits.json")
 WATCHLIST_FILE = os.path.join(LIVE_DIR, "watchlist.json")
 STATUS_FILE = os.path.join(LIVE_DIR, "status.json")
+# Canonical per-ticker attribute registry, independent of score decay.
+# Every scan call to ``Session.award(..., attr_key=...)`` upserts a row
+# here so the performer-ranker scan can attribute newly-entered top
+# performers back to whatever attributes they currently exhibit, even
+# if their score has decayed below the watchlist cutoff or was zero to
+# begin with (the default state under the market-feedback weight
+# system, where all attribute values bootstrap from 0).
+TICKER_ATTRS_FILE = os.path.join(LIVE_DIR, "ticker_attrs.json")
 # Persistent per-scan "last successful run" registry, written every time
 # any scan finishes. Unlike ``status.json`` (which is a rolling history),
 # this file keeps exactly one row per scan and is never trimmed, so the
@@ -55,6 +63,16 @@ ATTR_TAG_HALF_LIFE_HOURS = 72.0   # per-ticker attribute tags decay faster than 
 ATTR_TAG_HALF_LIFE_SEC = ATTR_TAG_HALF_LIFE_HOURS * 3600
 ATTR_TAG_MIN_WEIGHT = 0.15        # tags below this normalized weight get pruned
 MAX_ATTR_TAGS_PER_TICKER = 24     # cap the per-ticker tag list
+
+# Canonical ticker→attributes registry retention (independent of score
+# decay). An attribute observation stays in ``ticker_attrs.json`` for
+# this long after the most recent scan re-observed it; older
+# observations are pruned on the next write. 14 days lets a stock that
+# was tagged ``low_float`` recently still receive a performer-tier
+# bonus today even if the fundamentals slice that tagged it hasn't
+# rotated back to it yet.
+TICKER_ATTR_TTL_SEC = 14 * 24 * 3600  # 14 days
+MAX_ATTRS_PER_TICKER_REGISTRY = 40    # cap registry entries per ticker
 
 # All persistent state files are read-modify-written by multiple scan
 # tasks running concurrently in the daemon's thread pool. Serialize
@@ -158,6 +176,89 @@ def _decay_attrs(attrs: list, now_ts: float) -> list:
     return out[:MAX_ATTR_TAGS_PER_TICKER]
 
 
+def _update_ticker_attrs_registry(per_ticker_keys: dict, scan_id: str,
+                                    now_ts: float, now_iso: str) -> None:
+    """Merge per-ticker attribute observations into the canonical
+    ``ticker_attrs.json`` registry.
+
+    ``per_ticker_keys`` maps ``ticker → list[(attr_key, points, reason)]``.
+    Each (scan, attr_key) tuple per ticker is upserted with a refreshed
+    ``last_seen_ts`` and ``last_reason``. Stale rows older than
+    ``TICKER_ATTR_TTL_SEC`` are pruned on every write; tickers whose row
+    becomes empty after pruning are dropped.
+
+    This registry is independent of the score-based watchlist and never
+    "evaporates" via half-life decay — it's the source of truth for
+    "what attributes does this ticker currently exhibit" used by the
+    performer-ranker scan to attribute tier bonuses back to attributes.
+    """
+    if not per_ticker_keys:
+        return
+    blob = _read(TICKER_ATTRS_FILE, {"updated_at": "", "tickers": {}})
+    tickers_map = blob.get("tickers") or {}
+    cutoff = now_ts - TICKER_ATTR_TTL_SEC
+    # 1. Upsert this run's observations
+    for tk, observations in per_ticker_keys.items():
+        if not observations:
+            continue
+        tk = tk.upper()
+        row = tickers_map.get(tk) or {"attrs": []}
+        attrs_list = row.get("attrs") or []
+        # build a lookup of existing (scan, key) → entry
+        index = {(a.get("scan"), a.get("key")): a for a in attrs_list}
+        for (attr_key, pts, reason) in observations:
+            if not attr_key:
+                continue
+            tup = (scan_id, attr_key)
+            existing = index.get(tup)
+            if existing:
+                existing["last_seen_ts"] = now_ts
+                existing["last_seen_at"] = now_iso
+                if reason:
+                    existing["last_reason"] = reason
+                existing["observations"] = int(existing.get("observations", 0) or 0) + 1
+            else:
+                new_entry = {
+                    "scan": scan_id,
+                    "key": attr_key,
+                    "first_seen_ts": now_ts,
+                    "first_seen_at": now_iso,
+                    "last_seen_ts": now_ts,
+                    "last_seen_at": now_iso,
+                    "last_reason": reason or "",
+                    "observations": 1,
+                }
+                attrs_list.append(new_entry)
+                index[tup] = new_entry
+        # prune stale rows for this ticker
+        attrs_list = [a for a in attrs_list
+                      if float(a.get("last_seen_ts", 0) or 0) >= cutoff]
+        if not attrs_list:
+            tickers_map.pop(tk, None)
+            continue
+        # cap per-ticker entries (keep most recent)
+        if len(attrs_list) > MAX_ATTRS_PER_TICKER_REGISTRY:
+            attrs_list.sort(key=lambda a: float(a.get("last_seen_ts", 0) or 0),
+                            reverse=True)
+            attrs_list = attrs_list[:MAX_ATTRS_PER_TICKER_REGISTRY]
+        row["attrs"] = attrs_list
+        tickers_map[tk] = row
+    # 2. Sweep-prune any other ticker whose entire row is now stale
+    drop = []
+    for tk, row in tickers_map.items():
+        kept = [a for a in (row.get("attrs") or [])
+                if float(a.get("last_seen_ts", 0) or 0) >= cutoff]
+        if not kept:
+            drop.append(tk)
+        else:
+            row["attrs"] = kept
+    for tk in drop:
+        tickers_map.pop(tk, None)
+    blob["tickers"] = tickers_map
+    blob["updated_at"] = now_iso
+    _write(TICKER_ATTRS_FILE, blob)
+
+
 # ─── Public API ─────────────────────────────────────────────────────────
 
 
@@ -206,8 +307,24 @@ class Session:
         """Award ``points`` to ``ticker`` for ``reason``. ``attr_key`` (when
         supplied) is the short snake_case key from ``scan_weights.json`` —
         used to render the ticker's per-row attribute tag chips on the
-        dashboard and to attribute the award back to a tunable weight."""
-        if not ticker or points == 0:
+        dashboard and to attribute the award back to a tunable weight.
+
+        A call with ``points == 0`` and a non-empty ``attr_key`` still
+        records the attribute as a current observation (in
+        ``ticker_attrs.json``) but contributes nothing to the ticker's
+        score and emits no terminal log event. This is the common path
+        under the market-feedback weight system: attribute reward
+        values bootstrap from 0 and grow only when top performers
+        possess them, so scans continuously detect attributes at zero
+        reward while the engine still needs to know which tickers
+        currently exhibit which attributes.
+        """
+        if not ticker:
+            return
+        # Allow 0-point calls only if an attr_key is provided (otherwise
+        # there's literally nothing to record). Negative points are
+        # rejected here since the score model is additive-only.
+        if points == 0 and not attr_key:
             return
         ticker = ticker.upper()
         cur = self._awards.setdefault(
@@ -217,12 +334,18 @@ class Session:
              "attr_keys": []},
         )
         cur["points"] += float(points)
-        cur["reasons"].append(reason)
+        if reason:
+            cur["reasons"].append(reason)
         if attr_key:
             cur["attr_keys"].append((attr_key, float(points), reason))
         if float(points) > cur["best_points"]:
             cur["best_points"] = float(points)
             cur["best_reason"] = reason
+
+        # No score contribution → skip the terminal log line but the
+        # observation still flushes to ticker_attrs.json in close().
+        if points == 0:
+            return
 
         # auto-classify level
         lvl = level or ("hit" if points >= HIT_THRESHOLD
@@ -404,7 +527,16 @@ class Session:
         last_blob["scans"] = scans_map
         last_blob["updated_at"] = now_iso
         _write(SCAN_LAST_RUN_FILE, last_blob)
-
+        # 7) canonical ticker→attributes registry. Independent of score
+        # decay: a ticker is recorded here for every (scan, attr_key)
+        # observation in this run, even ones with 0 points. Used by the
+        # performer-ranker scan to look up what attributes each new
+        # top-tier entrant currently exhibits.
+        if self._awards:
+            _update_ticker_attrs_registry(
+                {tk: a.get("attr_keys", []) for tk, a in self._awards.items()},
+                self.scan, now, now_iso,
+            )
         return {
             "scan": self.scan,
             "duration": duration,

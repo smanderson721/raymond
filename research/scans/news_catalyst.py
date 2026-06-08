@@ -59,7 +59,10 @@ MAX_CAP = 10e9                     # filter out mega-caps (configurable later)
 MAX_ARTICLES_PER_RUN = 80          # safety cap on Gemini calls per cycle
 ARTICLE_BODY_MAX_CHARS = 4000      # truncate very long bodies before prompting
 SEEN_TTL_SEC = 48 * 3600           # dedup memory horizon
-DEFAULT_PROPOSED_POINTS = 2.0      # starting reward for an unrecognized catalyst
+# All attribute reward values bootstrap from 0 under the market-feedback
+# weight system. The performer-ranker scan grows them when top-tier
+# performers possess the catalyst at entry.
+DEFAULT_PROPOSED_POINTS = 0.0      # starting reward for an unrecognized catalyst
 SIMILARITY_MERGE = 0.65            # if proposed key is this similar to an existing id, merge
 
 # Alpaca News
@@ -68,23 +71,24 @@ ALPACA_NEWS_URL = "https://data.alpaca.markets/v1beta1/news"
 # ── default catalyst catalog ──────────────────────────────────────────
 # Each entry: (id, default_points, description). The scan auto-seeds these
 # into ``scan_weights.json`` on first run if missing, then reads the live
-# (operator-editable) values on every subsequent run.
+# (operator-editable) values on every subsequent run. All defaults are
+# 0.0 — the market-feedback ranker grows them.
 DEFAULT_CATALYSTS: list[tuple[str, float, str]] = [
-    ("news_earnings_beat",        3.0, "Quarterly results, EPS or revenue beat, guidance raise"),
-    ("news_merger_acquisition",   5.0, "M&A, takeover, buyout, definitive agreement to combine"),
-    ("news_partnership_contract", 3.0, "New customer contract, partnership, MOU, JV, distribution deal"),
-    ("news_regulatory_fda",       4.0, "FDA approval/clearance, CE mark, clinical-trial milestone, PDUFA, regulatory decision"),
-    ("news_debt_restructuring",   3.0, "Debt restructure, refinancing, tender offer, convertible cleanup, covenant waiver"),
-    ("news_compliance_listing",   2.0, "Regained Nasdaq/NYSE listing compliance, bid-price recovery, reverse split"),
-    ("news_insider_filing",       3.0, "Insider open-market purchase, 13D/13G filing, beneficial-ownership disclosure"),
-    ("news_strategic_pivot",      3.0, "Major strategy shift, new business segment, transformation, restructuring"),
-    ("news_leadership_change",    2.0, "CEO/CFO/board appointment or departure, activist involvement, cooperation agreement"),
-    ("news_legal_litigation",     4.0, "Lawsuit win, favorable ruling, settlement, patent verdict, court decision"),
-    ("news_offering_capital",     2.0, "Equity offering, capital raise, public offering, ATM, shelf registration, PIPE"),
-    ("news_sector_macro",         1.0, "Sector-wide event: commodity move, geopolitics, tariff, rate decision affecting the issuer's sector"),
-    ("news_short_squeeze",        2.0, "Short-interest spike/collapse, days-to-cover surge, borrow-fee move, squeeze chatter"),
-    ("news_analyst_coverage",     2.0, "Analyst initiation, upgrade, downgrade, price-target revision"),
-    ("news_social_momentum",      2.0, "Reddit/WSB/Stocktwits mention, viral retail interest, FOMO chatter"),
+    ("news_earnings_beat",        0.0, "Quarterly results, EPS or revenue beat, guidance raise"),
+    ("news_merger_acquisition",   0.0, "M&A, takeover, buyout, definitive agreement to combine"),
+    ("news_partnership_contract", 0.0, "New customer contract, partnership, MOU, JV, distribution deal"),
+    ("news_regulatory_fda",       0.0, "FDA approval/clearance, CE mark, clinical-trial milestone, PDUFA, regulatory decision"),
+    ("news_debt_restructuring",   0.0, "Debt restructure, refinancing, tender offer, convertible cleanup, covenant waiver"),
+    ("news_compliance_listing",   0.0, "Regained Nasdaq/NYSE listing compliance, bid-price recovery, reverse split"),
+    ("news_insider_filing",       0.0, "Insider open-market purchase, 13D/13G filing, beneficial-ownership disclosure"),
+    ("news_strategic_pivot",      0.0, "Major strategy shift, new business segment, transformation, restructuring"),
+    ("news_leadership_change",    0.0, "CEO/CFO/board appointment or departure, activist involvement, cooperation agreement"),
+    ("news_legal_litigation",     0.0, "Lawsuit win, favorable ruling, settlement, patent verdict, court decision"),
+    ("news_offering_capital",     0.0, "Equity offering, capital raise, public offering, ATM, shelf registration, PIPE"),
+    ("news_sector_macro",         0.0, "Sector-wide event: commodity move, geopolitics, tariff, rate decision affecting the issuer's sector"),
+    ("news_short_squeeze",        0.0, "Short-interest spike/collapse, days-to-cover surge, borrow-fee move, squeeze chatter"),
+    ("news_analyst_coverage",     0.0, "Analyst initiation, upgrade, downgrade, price-target revision"),
+    ("news_social_momentum",      0.0, "Reddit/WSB/Stocktwits mention, viral retail interest, FOMO chatter"),
 ]
 DEFAULT_CATALYST_IDS = {c[0] for c in DEFAULT_CATALYSTS}
 

@@ -240,6 +240,7 @@ SCHEDULES: list[Scan] = [
     Scan("fundamentals_snap", "research.scans.fundamentals_snap", every_n_minutes(15, offset=12),           "broad-universe fundamentals slice (~400/run, full cycle ~3.5h)"),
     Scan("xbrl_facts",       "research.scans.xbrl_facts",       daily_at(14, 0),                           "EDGAR 10-Q/10-K XBRL refresh"),
     Scan("news_catalyst",   "research.scans.news_catalyst",   every_n_minutes(10, offset=3),             "Alpaca News + Gemini catalyst classifier"),
+    Scan("performer_ranker", "research.scans.performer_ranker", every_n_minutes(15, offset=9),             "broad-universe top-5/20/100/250 rank attribution → attribute bonuses"),
     Scan("agent_decide",   "research.scans.agent_decide",   market_hours_every_n_min(5),                  "trading-agent v1 (paper)"),
     Scan("agent_outcomes", "research.scans.agent_outcomes", market_hours_every_n_min(15),                 "trading-agent outcomes/PnL tracker"),
     Scan("agent_shadow",   "research.scans.agent_shadow",   daily_at(20, 30),                             "trading-agent shadow baseline (daily)"),
@@ -499,6 +500,7 @@ async def handle_put_weights(request: web.Request) -> web.Response:
     # is editable from the UI. Other fields (label, live_editable, multipliers,
     # thresholds) are preserved as-is.
     current = all_weights() or {"scans": {}}
+    now_ts = time.time()
     for scan_id, scan_blob in payload.get("scans", {}).items():
         cur_scan = current.setdefault("scans", {}).setdefault(scan_id, {})
         for attr_key, attr_blob in (scan_blob.get("attributes") or {}).items():
@@ -511,6 +513,10 @@ async def handle_put_weights(request: web.Request) -> web.Response:
             cur_attrs = cur_scan.setdefault("attributes", {})
             cur_attr = cur_attrs.setdefault(attr_key, {})
             cur_attr["points"] = pts
+            # Operator-typed values are treated as freshly-decayed: stamp
+            # ``points_updated_ts`` so 1-week half-life decay restarts
+            # from this moment.
+            cur_attr["points_updated_ts"] = now_ts
             if "description" in attr_blob:
                 cur_attr["description"] = attr_blob["description"]
     fresh = write_weights(current)
@@ -561,11 +567,13 @@ async def handle_catalyst_action(request: web.Request) -> web.Response:
         if "new_points" in payload:
             try:
                 attrs[attr_key]["points"] = float(payload["new_points"])
+                attrs[attr_key]["points_updated_ts"] = time.time()
             except (TypeError, ValueError):
                 return web.json_response({"error": "new_points not numeric"}, status=400)
     elif action == "reject":
         attrs[attr_key]["status"] = "rejected"
         attrs[attr_key]["points"] = 0.0
+        attrs[attr_key]["points_updated_ts"] = time.time()
     elif action == "rename":
         new_key = (payload.get("new_key") or "").strip()
         if not new_key:
@@ -582,6 +590,7 @@ async def handle_catalyst_action(request: web.Request) -> web.Response:
         if "new_points" in payload:
             try:
                 moved["points"] = float(payload["new_points"])
+                moved["points_updated_ts"] = time.time()
             except (TypeError, ValueError):
                 return web.json_response({"error": "new_points not numeric"}, status=400)
         aliases = list(moved.get("aliases") or [])
@@ -616,6 +625,7 @@ DEFAULT_SCAN_COLORS = {
     "fundamentals_snap": "#d97706",
     "xbrl_facts":        "#d946ef",
     "news_catalyst":     "#6366f1",
+    "performer_ranker":  "#eab308",
 }
 
 
@@ -758,6 +768,76 @@ async def handle_agent_shadow(request: web.Request) -> web.Response:
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 
+
+# ── /api/performers — top 10 trailing-30d performers ──────────────────
+# Top Performers dashboard column. Primary source is the broad-
+# universe ranking written by the ``performer_ranker`` scan
+# (``data/live/performers.json``). Falls back to the legacy
+# ~258-ticker price_data.json + watchlist union for the cold-start
+# window before the broad ranker has accumulated enough coverage.
+PRICE_DATA_FILE     = REPO_ROOT / "research_output" / "price_data.json"
+WATCHLIST_FILE      = LIVE_DIR / "watchlist.json"
+PERFORMERS_FILE     = LIVE_DIR / "performers.json"
+
+
+def _read_performers_payload() -> dict:
+    # Prefer the canonical performers file produced by the
+    # performer_ranker scan — it covers the full universe (~6000
+    # tickers) and already includes attribute attribution per row.
+    if PERFORMERS_FILE.exists():
+        try:
+            blob = json.loads(PERFORMERS_FILE.read_text())
+            rows = blob.get("performers") or []
+            return {
+                "fetched_at":    blob.get("updated_at"),
+                "universe_size": blob.get("universe_size", len(rows)),
+                "performers":    rows[:10],
+                "source":        "performer_ranker",
+            }
+        except Exception:
+            pass
+    # Cold-start fallback: join the legacy 258-ticker price_data with
+    # whatever's currently on the rolling watchlist.
+    try:
+        prices = json.loads(PRICE_DATA_FILE.read_text()) if PRICE_DATA_FILE.exists() else {}
+    except Exception:
+        prices = {}
+    try:
+        watch = json.loads(WATCHLIST_FILE.read_text()) if WATCHLIST_FILE.exists() else {}
+    except Exception:
+        watch = {}
+    tickers = prices.get("tickers", {}) or {}
+    watch_by_tk = {r.get("ticker"): r for r in (watch.get("watchlist") or []) if r.get("ticker")}
+    rows: list[dict] = []
+    for tk, d in tickers.items():
+        pct = d.get("pct_30d")
+        if pct is None:
+            continue
+        wl = watch_by_tk.get(tk) or {}
+        rows.append({
+            "ticker":      tk,
+            "pct_30d":     float(pct),
+            "price":       d.get("price"),
+            "score":       float(wl.get("score") or 0),
+            "attrs":       wl.get("attrs") or [],
+            "last_scan":   wl.get("last_scan"),
+            "last_reason": wl.get("last_reason"),
+            "last_ts":     wl.get("last_ts"),
+        })
+    rows.sort(key=lambda r: r["pct_30d"], reverse=True)
+    return {
+        "fetched_at":    prices.get("fetched_at"),
+        "universe_size": len(rows),
+        "performers":    rows[:10],
+        "source":        "fallback_price_data",
+    }
+
+
+async def handle_performers(request: web.Request) -> web.Response:
+    payload = await asyncio.to_thread(_read_performers_payload)
+    return web.json_response(payload, headers={"Cache-Control": "no-store"})
+
+
 # ── app wiring ─────────────────────────────────────────────────────────
 def build_app() -> web.Application:
     app = web.Application(middlewares=[cors_middleware])
@@ -776,6 +856,7 @@ def build_app() -> web.Application:
     app.router.add_get("/api/agent-account", handle_agent_account)
     app.router.add_get("/api/agent-shadow",  handle_agent_shadow)
     app.router.add_post("/api/agent-run", handle_agent_run)
+    app.router.add_get("/api/performers", handle_performers)
     app.router.add_get("/data/live/{name}", handle_live_file)
     # Also serve other static repo files (favicon etc.) on demand
     return app
