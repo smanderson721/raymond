@@ -9,10 +9,14 @@ name: AlpacaTradingAgent (paper)
 # Models: gemini-3.1-flash-lite for both quick and deep tiers (cost-bounded).
 # Alpaca: paper trading only (ALPACA_USE_PAPER=True). Currently the agent
 # emits BUY/HOLD/SELL recommendations; no orders are placed.
+#
+# SHELVED 2026-07-19: auto-trigger disabled to stop Gemini API cost while the
+# raymond stock-scanner is on the shelf. Re-enable by uncommenting the
+# `workflow_run:` block. Manual runs still available via workflow_dispatch.
 on:
-  workflow_run:
-    workflows: ["Daily Catalyst Scan"]
-    types: [completed]
+  # workflow_run:
+  #   workflows: ["Daily Catalyst Scan"]
+  #   types: [completed]
   workflow_dispatch:
     inputs:
       top:

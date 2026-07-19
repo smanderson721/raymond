@@ -2,9 +2,13 @@ name: Weekly Precondition Scan
 
 # Sunday 23:00 UTC ≈ 6 PM ET Sunday — refreshes the precondition scores
 # for all ~5000 NASDAQ + NYSE tickers via yfinance.
+#
+# SHELVED 2026-07-19: schedule disabled while the raymond stock-scanner is on
+# the shelf. yfinance-only (no Gemini cost) but paused with the rest of the
+# app. Re-enable by uncommenting the `schedule:` block.
 on:
-  schedule:
-    - cron: "0 23 * * 0"
+  # schedule:
+  #   - cron: "0 23 * * 0"
   workflow_dispatch:
 
 jobs:

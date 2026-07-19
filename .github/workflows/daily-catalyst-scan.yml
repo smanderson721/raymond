@@ -3,9 +3,13 @@ name: Daily Catalyst Scan
 # Runs every weekday at 02:00 UTC (≈ 9 PM ET previous evening)
 # — captures end-of-day 8-Ks and after-hours news. Then refreshes
 # 30-day price data for the top 250 stocks by P + 2C.
+#
+# SHELVED 2026-07-19: schedule disabled to stop Gemini API cost while the
+# raymond stock-scanner is on the shelf. Re-enable by uncommenting the
+# `schedule:` block. Manual runs still available via workflow_dispatch.
 on:
-  schedule:
-    - cron: "0 2 * * 2-6"  # Tue–Sat UTC = Mon–Fri evening ET
+  # schedule:
+  #   - cron: "0 2 * * 2-6"  # Tue–Sat UTC = Mon–Fri evening ET
   workflow_dispatch:        # allow manual trigger
 
 jobs:
